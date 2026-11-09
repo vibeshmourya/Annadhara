@@ -21,6 +21,7 @@ router.use(protect, authorize('ADMIN'));
 // Organization administrative management (Phase 1 core requirement)
 router.get('/organizations', getAdminOrganizations);
 router.patch('/organizations/:id/verification', verifyOrganizationValidator, validate, verifyOrganizationByAdmin);
+router.patch('/organizations/:id/verify', verifyOrganizationValidator, validate, verifyOrganizationByAdmin);
 
 // User and platform moderation
 router.get('/users', getAllUsers);

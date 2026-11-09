@@ -23,6 +23,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.get('/my-donations', protect, authorize('donor', 'admin'), getMyDonations);
+router.get('/my', protect, authorize('donor', 'admin'), getMyDonations);
 router.get('/:id', protect, getDonationById);
 router.post('/', protect, authorize('donor', 'admin'), createDonationValidator, validate, createDonation);
 router.put('/:id', protect, authorize('donor', 'admin'), updateDonationValidator, validate, updateDonation);

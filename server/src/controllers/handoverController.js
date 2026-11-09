@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const HandoverRecord = require('../models/HandoverRecord');
 const Reservation = require('../models/Reservation');
 const Donation = require('../models/Donation');
@@ -14,22 +15,33 @@ const confirmHandover = async (req, res, next) => {
   try {
     const { reservationId, handoverCode, notes, verificationMethod = 'code' } = req.body;
 
-    if (!reservationId || !handoverCode) {
+    if (!handoverCode) {
       return res.status(400).json({
         success: false,
-        message: 'Reservation ID and handover verification code are required',
+        message: 'Handover verification code is required',
       });
     }
 
-    const reservation = await Reservation.findById(reservationId)
-      .populate('donation')
-      .populate('donor', 'name email phone')
-      .populate('recipient', 'name email phone');
+    let reservation;
+    if (reservationId && reservationId !== 'by_code' && mongoose.Types.ObjectId.isValid(reservationId)) {
+      reservation = await Reservation.findById(reservationId)
+        .populate('donation')
+        .populate('donor', 'name email phone')
+        .populate('recipient', 'name email phone');
+    } else if (handoverCode) {
+      reservation = await Reservation.findOne({
+        handoverCode: handoverCode.trim().toUpperCase(),
+        status: { $in: ['approved', 'pending'] },
+      })
+        .populate('donation')
+        .populate('donor', 'name email phone')
+        .populate('recipient', 'name email phone');
+    }
 
     if (!reservation) {
       return res.status(404).json({
         success: false,
-        message: 'Reservation not found',
+        message: 'Reservation matching verification code not found',
       });
     }
 

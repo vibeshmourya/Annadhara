@@ -10,6 +10,12 @@ router.use(protect);
 
 router.get('/me', getMyProfile);
 router.patch('/me', updateProfileValidator, validate, updateMyProfile);
+router.put('/me', updateProfileValidator, validate, updateMyProfile);
+
+// Aliases for mobile API client compatibility
+router.get('/profile', getMyProfile);
+router.patch('/profile', updateProfileValidator, validate, updateMyProfile);
+router.put('/profile', updateProfileValidator, validate, updateMyProfile);
 
 module.exports = router;
 

@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "seed": "node src/utils/seedData.js",
     "test": "node tests/phase1.test.js",
-    "test:integration": "node tests/api.test.js"
+    "test:integration": "node tests/api.test.js",
+    "test:phase4": "node tests/phase4_integration.test.js"
   },
   "keywords": [
     "foodbridge",

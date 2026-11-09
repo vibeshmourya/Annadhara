@@ -1,0 +1,38 @@
+{
+  "name": "foodbridge-server",
+  "version": "1.0.0",
+  "description": "Shared REST API backend for FoodBridge Surplus Food Rescue and Donation Network",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/utils/seedData.js",
+    "test": "node tests/api.test.js"
+  },
+  "keywords": [
+    "foodbridge",
+    "food-donation",
+    "food-rescue",
+    "mern",
+    "flutter",
+    "rest-api"
+  ],
+  "author": "FoodBridge Team",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-validator": "^7.2.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb-memory-server": "^10.1.2",
+    "mongoose": "^8.8.1",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
+

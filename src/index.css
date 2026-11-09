@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-green: #2E7D5B;
+  --dark-green: #205B43;
+  --light-green: #EAF4EE;
+  --bg-color: #F8FAF8;
+  --text-primary: #26332D;
+  --text-secondary: #718078;
+  --warning-amber: #E9A23B;
+  --danger-red: #D9534F;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Nature scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C4D7CD;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #99B9A8;
+}
+

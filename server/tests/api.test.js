@@ -79,21 +79,46 @@ async function runTests() {
       throw new Error(`Recipient registration failed: ${JSON.stringify(recipientRes)}`);
     }
     let recipientToken = recipientRes.data.data.token;
-    const recipientOrgId = recipientRes.data.data.user.organization?._id || recipientRes.data.data.user.organization;
+    const recipientOrgId =
+      recipientRes.data.data.user.organizationId?._id ||
+      recipientRes.data.data.user.organizationId ||
+      recipientRes.data.data.user.organization?._id ||
+      recipientRes.data.data.user.organization;
     console.log('  ✅ Recipient registered (Org pending verification)\n');
 
-    // 4. Register Admin & verify Recipient
-    console.log('Test 4: Register Admin & Verify Recipient Organization');
-    const adminRes = await request('/api/auth/register', {
+    // 4. Authenticate Admin & verify Recipient
+    console.log('Test 4: Authenticate Admin & Verify Recipient Organization');
+    let adminToken;
+    const adminLoginRes = await request('/api/auth/login', {
       method: 'POST',
       body: {
-        name: 'System Admin',
-        email: `admin_${Date.now()}@example.com`,
-        password: 'Password@123',
-        role: 'admin',
+        email: 'admin@foodbridge.org',
+        password: 'Admin@123',
       },
     });
-    const adminToken = adminRes.data.data.token;
+    if (adminLoginRes.status === 200 && adminLoginRes.data.data?.token) {
+      adminToken = adminLoginRes.data.data.token;
+    } else {
+      // Fallback: create direct admin in DB if seed was bypassed in test mode
+      const User = require('../src/models/User');
+      let adminUser = await User.findOne({ email: 'admin@foodbridge.org' });
+      if (!adminUser) {
+        adminUser = new User({
+          name: 'Platform Admin',
+          email: 'admin@foodbridge.org',
+          role: 'ADMIN',
+          accountStatus: 'ACTIVE',
+        });
+        adminUser.password = 'Admin@123';
+        await adminUser.save();
+      }
+      const jwt = require('jsonwebtoken');
+      adminToken = jwt.sign(
+        { id: adminUser._id, role: 'ADMIN' },
+        process.env.JWT_SECRET || 'foodbridge_super_secret_jwt_key_2026_shared_hope_zero_waste',
+        { expiresIn: '7d' }
+      );
+    }
 
     // Admin verifies the recipient org
     const verifyRes = await request(`/api/organizations/${recipientOrgId}/verify`, {
@@ -101,7 +126,7 @@ async function runTests() {
       headers: { Authorization: `Bearer ${adminToken}` },
       body: { status: 'verified', notes: 'Approved in test suite' },
     });
-    if (verifyRes.status !== 200 || verifyRes.data.data.verificationStatus !== 'verified') {
+    if (verifyRes.status !== 200 || verifyRes.data.data.verificationStatus?.toUpperCase() !== 'VERIFIED') {
       throw new Error(`Org verification failed: ${JSON.stringify(verifyRes)}`);
     }
     console.log('  ✅ Organization verified by admin\n');

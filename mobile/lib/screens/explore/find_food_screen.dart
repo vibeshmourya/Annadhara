@@ -103,7 +103,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                         ),
                         selected: isSelected,
                         selectedColor: AppColors.primaryGreen,
-                        backgroundColor: AppColors.lightGreen.withOpacity(0.5),
+                        backgroundColor: AppColors.lightGreen.withValues(alpha: 0.5),
                         side: BorderSide(color: isSelected ? AppColors.primaryGreen : AppColors.border),
                         onSelected: (selected) {
                           if (selected) {
@@ -128,7 +128,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.secondaryText.withOpacity(0.5)),
+                            Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.secondaryText.withValues(alpha: 0.5)),
                             const SizedBox(height: 8),
                             const Text('No surplus food found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryText)),
                             const SizedBox(height: 4),
@@ -189,7 +189,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -198,61 +198,81 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryGreen,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${item.availableQuantity} ${item.unit} left',
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  if (item.distanceKm != null)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 10, color: Colors.white),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${item.distanceKm!.toStringAsFixed(1)} km',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
 
-            // Content
+            // Card Body
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        item.category.replaceAll('_', ' ').toUpperCase(),
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                      ),
+                      Text(
+                        '${item.availableQuantity} ${item.unit} available',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primaryText),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryText),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     item.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                    style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
                   ),
                   const SizedBox(height: 10),
+
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.business_outlined, size: 14, color: AppColors.primaryGreen),
-                          const SizedBox(width: 4),
-                          Text(item.organizationName ?? item.donorName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryText)),
-                        ],
+                      const Icon(Icons.business_outlined, size: 14, color: AppColors.secondaryText),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          item.organizationName ?? item.donorName,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.secondaryText),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 14, color: AppColors.secondaryText),
-                          const SizedBox(width: 2),
-                          Text(item.city, style: const TextStyle(fontSize: 11, color: AppColors.secondaryText)),
-                        ],
+                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.secondaryText),
+                      const SizedBox(width: 2),
+                      Text(
+                        item.city,
+                        style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
                       ),
                     ],
                   ),

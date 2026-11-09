@@ -16,6 +16,7 @@ class DonationModel {
   final DateTime pickupEndTime;
   final String imageUrl;
   final String status;
+  final String donorId;
   final String donorName;
   final String? organizationName;
   final double? distanceKm;
@@ -38,6 +39,7 @@ class DonationModel {
     required this.pickupEndTime,
     this.imageUrl = '',
     required this.status,
+    this.donorId = '',
     required this.donorName,
     this.organizationName,
     this.distanceKm,
@@ -45,13 +47,17 @@ class DonationModel {
 
   factory DonationModel.fromJson(Map<String, dynamic> json) {
     String dName = 'Verified Donor';
+    String dId = '';
     if (json['donor'] is Map) {
       dName = json['donor']['name'] ?? dName;
+      dId = json['donor']['_id'] ?? json['donor']['id'] ?? '';
+    } else if (json['donor'] is String) {
+      dId = json['donor'];
     }
 
     String? oName;
     if (json['organization'] is Map) {
-      oName = json['organization']['name'];
+      oName = json['organization']['name'] ?? json['organization']['organizationName'];
     }
 
     String c = '';
@@ -84,10 +90,10 @@ class DonationModel {
       pickupEndTime: DateTime.tryParse(json['pickupEndTime'] ?? '') ?? DateTime.now().add(const Duration(hours: 6)),
       imageUrl: json['imageUrl'] ?? '',
       status: json['status'] ?? 'available',
+      donorId: dId,
       donorName: dName,
       organizationName: oName,
       distanceKm: json['distanceKm'] != null ? (json['distanceKm'] as num).toDouble() : null,
     );
   }
 }
-

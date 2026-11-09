@@ -127,7 +127,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
               final code = _handoverCodeController.text.trim();
               if (code.isEmpty) return;
               final activity = Provider.of<ActivityProvider>(context, listen: false);
-              final success = await activity.confirmHandover(res.id, code, 'Verified via mobile app');
+              final success = await activity.confirmHandover(res.id, code, notes: 'Verified via mobile app');
               if (mounted) {
                 Navigator.pop(context);
                 if (success) {

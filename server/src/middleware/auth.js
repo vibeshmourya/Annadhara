@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
+const { isTokenRevoked } = require('../services/tokenService');
 
 /**
  * Protect routes: verify JWT Bearer token and attach active user
@@ -19,8 +20,19 @@ const protect = async (req, res, next) => {
     });
   }
 
+  // Check if token has been explicitly invalidated (logged out)
+  if (isTokenRevoked(token)) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token has been invalidated. Please log in again.',
+    });
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'foodbridge_super_secret_jwt_key_2026_shared_hope_zero_waste');
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'foodbridge_super_secret_jwt_key_2026_shared_hope_zero_waste'
+    );
 
     const user = await User.findById(decoded.id).populate('organization');
 
@@ -31,7 +43,7 @@ const protect = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
+    if (user.accountStatus === 'INACTIVE' || user.accountStatus === 'SUSPENDED') {
       return res.status(403).json({
         success: false,
         message: 'This user account has been deactivated. Please contact support.',
@@ -39,20 +51,23 @@ const protect = async (req, res, next) => {
     }
 
     req.user = user;
+    req.token = token;
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid or expired authentication token',
-      error: error.message,
+      message: error.name === 'TokenExpiredError' ? 'Authentication token has expired' : 'Invalid authentication token',
     });
   }
 };
 
 /**
  * Authorize role-based access
+ * Supports both uppercase and lowercase role checks
  */
 const authorize = (...roles) => {
+  const normalizedAllowed = roles.map((r) => r.toUpperCase());
+
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -61,7 +76,9 @@ const authorize = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const userRole = (req.user.role || '').toUpperCase();
+
+    if (!normalizedAllowed.includes(userRole)) {
       return res.status(403).json({
         success: false,
         message: `Forbidden: User role '${req.user.role}' is not authorized to perform this action. Required: [${roles.join(', ')}]`,
@@ -76,24 +93,26 @@ const authorize = (...roles) => {
  * Ensures recipient organization is verified before reserving food
  */
 const requireVerifiedOrg = async (req, res, next) => {
-  if (req.user.role === 'admin') {
+  const role = (req.user.role || '').toUpperCase();
+  if (role === 'ADMIN') {
     return next(); // Admins bypass
   }
 
-  if (req.user.role === 'recipient') {
-    if (!req.user.organization) {
+  if (role === 'RECIPIENT') {
+    const orgId = req.user.organizationId || req.user.organization;
+    if (!orgId) {
       return res.status(403).json({
         success: false,
         message: 'You must link an organization to your recipient profile before reserving food',
       });
     }
 
-    const org = await Organization.findById(req.user.organization);
-    if (!org || org.verificationStatus !== 'verified') {
+    const org = await Organization.findById(orgId);
+    if (!org || (org.verificationStatus || '').toUpperCase() !== 'VERIFIED') {
       return res.status(403).json({
         success: false,
         message: 'Your organization must be verified by platform administrators before reserving surplus food',
-        verificationStatus: org ? org.verificationStatus : 'none',
+        verificationStatus: org ? org.verificationStatus : 'NONE',
       });
     }
   }
@@ -106,4 +125,3 @@ module.exports = {
   authorize,
   requireVerifiedOrg,
 };
-

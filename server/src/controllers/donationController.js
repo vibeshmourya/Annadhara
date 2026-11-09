@@ -326,12 +326,68 @@ const reportDonation = async (req, res, next) => {
   }
 };
 
+/**
+ * Cancel a food donation (only permitted before collection)
+ * DELETE /api/donations/:id
+ */
+const cancelDonation = async (req, res, next) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Food donation not found',
+      });
+    }
+
+    const isOwner = donation.donor.toString() === req.user._id.toString();
+    const isAdmin = (req.user.role || '').toUpperCase() === 'ADMIN';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to cancel this donation',
+      });
+    }
+
+    if (donation.status === 'completed' || donation.collectedQuantity > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel a donation that has already been collected or completed',
+      });
+    }
+
+    donation.status = 'cancelled';
+    donation.availableQuantity = 0;
+    await donation.save();
+
+    await logAudit({
+      action: 'DONATION_CANCELLED',
+      user: req.user._id,
+      role: req.user.role,
+      entityType: 'Donation',
+      entityId: donation._id,
+      details: { title: donation.title },
+      ipAddress: req.ip,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Donation cancelled successfully',
+      data: donation,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createDonation,
   getDonations,
   getDonationById,
   getMyDonations,
   updateDonation,
+  cancelDonation,
   reportDonation,
 };
 

@@ -85,6 +85,19 @@ class ApiService {
     }
   }
 
+  static Future<ApiResponse> delete(String endpoint) async {
+    try {
+      final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+      final response = await http.delete(
+        uri,
+        headers: await _headers(),
+      );
+      return _parseResponse(response);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+    }
+  }
+
   static ApiResponse _parseResponse(http.Response response) {
     try {
       final decoded = jsonDecode(response.body);
@@ -108,4 +121,3 @@ class ApiService {
     }
   }
 }
-

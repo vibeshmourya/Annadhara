@@ -1,45 +1,47 @@
 /**
  * Centralized API error handling middleware
+ * Returns clean, consistent error responses without leaking stack traces or internal secrets
  */
 const errorHandler = (err, req, res, next) => {
-  console.error('[Error]', err);
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
 
-  let error = { ...err };
-  error.message = err.message;
-
-  // Mongoose bad ObjectId
+  // Mongoose CastError (bad ObjectId)
   if (err.name === 'CastError') {
-    const message = `Resource not found with id ${err.value}`;
-    return res.status(404).json({ success: false, message });
+    statusCode = 404;
+    message = `Resource not found with id ${err.value}`;
   }
 
-  // Mongoose duplicate key
+  // Mongoose duplicate key error (code 11000)
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    const message = `A record with this ${field} already exists`;
-    return res.status(400).json({ success: false, message });
+    statusCode = 400;
+    const field = Object.keys(err.keyValue || {})[0] || 'field';
+    message = `A record with this ${field} already exists`;
   }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map((val) => val.message);
-    return res.status(400).json({ success: false, message: 'Validation Error', errors: message });
+    statusCode = 400;
+    message = Object.values(err.errors || {})
+      .map((val) => val.message)
+      .join(', ');
   }
 
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({ success: false, message: 'Invalid token' });
+    statusCode = 401;
+    message = 'Invalid authentication token';
   }
 
   if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({ success: false, message: 'Token has expired' });
+    statusCode = 401;
+    message = 'Authentication token has expired';
   }
 
-  res.status(err.statusCode || 500).json({
+  res.status(statusCode).json({
     success: false,
-    message: error.message || 'Internal Server Error',
+    message,
   });
 };
 
 module.exports = errorHandler;
-

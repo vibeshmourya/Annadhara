@@ -73,5 +73,34 @@ class DonationProvider with ChangeNotifier {
     }
     return false;
   }
-}
 
+  Future<bool> updateDonation(String id, Map<String, dynamic> data) async {
+    try {
+      final res = await ApiService.put('${ApiConstants.donations}/$id', data);
+      if (res.success) {
+        fetchMyDonations();
+        return true;
+      } else {
+        _errorMessage = res.message;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+    return false;
+  }
+
+  Future<bool> cancelDonation(String id) async {
+    try {
+      final res = await ApiService.delete('${ApiConstants.donations}/$id');
+      if (res.success) {
+        fetchMyDonations();
+        return true;
+      } else {
+        _errorMessage = res.message;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+    return false;
+  }
+}

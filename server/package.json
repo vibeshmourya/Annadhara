@@ -2,12 +2,13 @@
   "name": "foodbridge-server",
   "version": "1.0.0",
   "description": "Shared REST API backend for FoodBridge Surplus Food Rescue and Donation Network",
-  "main": "src/server.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "seed": "node src/utils/seedData.js",
-    "test": "node tests/api.test.js"
+    "test": "node tests/phase1.test.js",
+    "test:integration": "node tests/api.test.js"
   },
   "keywords": [
     "foodbridge",

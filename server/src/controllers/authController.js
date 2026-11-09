@@ -2,13 +2,27 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
 const { logAudit } = require('../services/auditService');
+const { revokeToken } = require('../services/tokenService');
 
 const generateToken = (userId, role) => {
   return jwt.sign(
-    { id: userId, role },
+    { id: userId, role: role ? role.toUpperCase() : 'DONOR' },
     process.env.JWT_SECRET || 'foodbridge_super_secret_jwt_key_2026_shared_hope_zero_waste',
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
+};
+
+// Normalize organization type string
+const normalizeOrgType = (type, role) => {
+  if (!type) return role === 'DONOR' ? 'Restaurant' : 'NGO';
+  const lower = type.toLowerCase().replace(/[^a-z]/g, '');
+  if (lower.includes('restaurant')) return 'Restaurant';
+  if (lower.includes('hotel')) return 'Hotel';
+  if (lower.includes('canteen')) return 'College Canteen';
+  if (lower.includes('event')) return 'Event Organizer';
+  if (lower.includes('ngo')) return 'NGO';
+  if (lower.includes('distribution') || lower.includes('foodbank')) return 'Food Distribution Organization';
+  return 'Other';
 };
 
 /**
@@ -20,6 +34,25 @@ const register = async (req, res, next) => {
     const { name, email, password, role, phone, address, organizationName, organizationType, registrationNumber } =
       req.body;
 
+    // Normalize role to uppercase
+    const requestedRole = (role || 'DONOR').toUpperCase();
+
+    // Security requirement: Prevent public registration as ADMIN
+    if (requestedRole === 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Registration as ADMIN is not permitted through public registration',
+      });
+    }
+
+    if (!['DONOR', 'RECIPIENT', 'VOLUNTEER'].includes(requestedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Role must be one of: DONOR, RECIPIENT, VOLUNTEER',
+      });
+    }
+
+    // Check duplicate email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -28,39 +61,39 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Create user record
+    // Create user record (pre-save hashes plain password virtual into passwordHash)
     const user = new User({
       name,
       email,
-      password,
-      role,
       phone: phone || '',
+      role: requestedRole,
+      accountStatus: 'ACTIVE',
       address: address || {},
-      isVerified: role === 'donor' || role === 'volunteer', // Recipients require admin verification by default
+      isVerified: requestedRole === 'DONOR' || requestedRole === 'VOLUNTEER',
     });
+    user.password = password;
 
     await user.save();
 
-    // If organization details provided for donor or recipient, create organization
-    if (organizationName && (role === 'donor' || role === 'recipient')) {
+    // If organization details provided, create organization with PENDING status for NGOs, VERIFIED for Donors
+    if (organizationName && (requestedRole === 'DONOR' || requestedRole === 'RECIPIENT')) {
       const org = await Organization.create({
-        name: organizationName,
-        type: organizationType || (role === 'donor' ? 'restaurant' : 'ngo'),
+        organizationName,
+        organizationType: normalizeOrgType(organizationType, requestedRole),
         registrationNumber: registrationNumber || '',
-        contactEmail: email,
-        contactPhone: phone || '',
+        email,
+        phone: phone || '',
         address: address || {},
-        verificationStatus: role === 'donor' ? 'verified' : 'pending', // NGOs undergo verification
+        verificationStatus: requestedRole === 'DONOR' ? 'VERIFIED' : 'PENDING',
         createdBy: user._id,
       });
 
-      user.organization = org._id;
+      user.organizationId = org._id;
       await user.save();
     }
 
     const token = generateToken(user._id, user.role);
 
-    // Audit log
     await logAudit({
       action: 'USER_REGISTERED',
       user: user._id,
@@ -71,15 +104,14 @@ const register = async (req, res, next) => {
       ipAddress: req.ip,
     });
 
-    // Populate organization before responding
-    await user.populate('organization');
+    await user.populate('organizationId');
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully',
+      message: 'User registered successfully',
       data: {
         token,
-        user,
+        user: user.toJSON(),
       },
     });
   } catch (error) {
@@ -95,7 +127,15 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password').populate('organization');
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both email and password',
+      });
+    }
+
+    // Explicitly select passwordHash
+    const user = await User.findOne({ email }).select('+passwordHash').populate('organizationId');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -103,13 +143,15 @@ const login = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
+    // Check accountStatus
+    if (user.accountStatus === 'INACTIVE' || user.accountStatus === 'SUSPENDED') {
       return res.status(403).json({
         success: false,
         message: 'Account has been deactivated. Please contact platform support.',
       });
     }
 
+    // Verify candidate password against passwordHash
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -148,10 +190,11 @@ const login = async (req, res, next) => {
  */
 const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).populate('organization');
+    const user = await User.findById(req.user._id).populate('organizationId');
     res.status(200).json({
       success: true,
-      data: user,
+      message: 'Current user profile retrieved successfully',
+      data: user.toJSON(),
     });
   } catch (error) {
     next(error);
@@ -159,33 +202,27 @@ const getMe = async (req, res, next) => {
 };
 
 /**
- * Update user profile
- * PUT /api/auth/profile
+ * Invalidate user session
+ * POST /api/auth/logout
  */
-const updateProfile = async (req, res, next) => {
+const logout = async (req, res, next) => {
   try {
-    const { name, phone, address, coordinates } = req.body;
-
-    const updates = {};
-    if (name) updates.name = name;
-    if (phone !== undefined) updates.phone = phone;
-    if (address) updates.address = address;
-    if (coordinates && coordinates.length === 2) {
-      updates.location = {
-        type: 'Point',
-        coordinates,
-      };
+    if (req.token) {
+      revokeToken(req.token);
     }
 
-    const user = await User.findByIdAndUpdate(req.user._id, updates, {
-      new: true,
-      runValidators: true,
-    }).populate('organization');
+    await logAudit({
+      action: 'USER_LOGOUT',
+      user: req.user?._id || null,
+      role: req.user?.role || '',
+      entityType: 'User',
+      entityId: req.user?._id || null,
+      ipAddress: req.ip,
+    });
 
     res.status(200).json({
       success: true,
-      message: 'Profile updated successfully',
-      data: user,
+      message: 'Logged out successfully. Token has been invalidated on the server.',
     });
   } catch (error) {
     next(error);
@@ -196,6 +233,5 @@ module.exports = {
   register,
   login,
   getMe,
-  updateProfile,
+  logout,
 };
-

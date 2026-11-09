@@ -8,6 +8,9 @@ class ReservationModel {
   final String handoverCode;
   final String donorName;
   final String recipientName;
+  final String recipientOrgName;
+  final String pickupStreet;
+  final String pickupCity;
   final String requestNotes;
   final String donorNotes;
   final DateTime createdAt;
@@ -22,6 +25,9 @@ class ReservationModel {
     required this.handoverCode,
     required this.donorName,
     required this.recipientName,
+    this.recipientOrgName = '',
+    this.pickupStreet = '',
+    this.pickupCity = '',
     this.requestNotes = '',
     this.donorNotes = '',
     required this.createdAt,
@@ -30,11 +36,19 @@ class ReservationModel {
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
     String dTitle = 'Food Donation';
     String dId = '';
-    String dUnit = 'units';
+    String dUnit = 'meals';
+    String pStreet = '';
+    String pCity = '';
+
     if (json['donation'] is Map) {
-      dTitle = json['donation']['title'] ?? dTitle;
-      dId = json['donation']['_id'] ?? json['donation']['id'] ?? '';
-      dUnit = json['donation']['unit'] ?? dUnit;
+      final don = json['donation'];
+      dTitle = don['title'] ?? dTitle;
+      dId = don['_id'] ?? don['id'] ?? '';
+      dUnit = don['unit'] ?? dUnit;
+      if (don['pickupLocation'] is Map && don['pickupLocation']['address'] is Map) {
+        pStreet = don['pickupLocation']['address']['street'] ?? '';
+        pCity = don['pickupLocation']['address']['city'] ?? '';
+      }
     } else if (json['donation'] is String) {
       dId = json['donation'];
     }
@@ -49,6 +63,11 @@ class ReservationModel {
       rName = json['recipient']['name'] ?? rName;
     }
 
+    String rOrgName = '';
+    if (json['recipientOrg'] is Map) {
+      rOrgName = json['recipientOrg']['name'] ?? json['recipientOrg']['organizationName'] ?? '';
+    }
+
     return ReservationModel(
       id: json['_id'] ?? json['id'] ?? '',
       donationId: dId,
@@ -59,10 +78,12 @@ class ReservationModel {
       handoverCode: json['handoverCode'] ?? '',
       donorName: dName,
       recipientName: rName,
+      recipientOrgName: rOrgName,
+      pickupStreet: pStreet,
+      pickupCity: pCity,
       requestNotes: json['requestNotes'] ?? '',
       donorNotes: json['donorNotes'] ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
     );
   }
 }
-

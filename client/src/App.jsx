@@ -2,8 +2,10 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { Navbar } from './components/layout/Navbar';
-import { Footer } from './components/layout/Footer';
+
+// Layouts
+import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout';
+import { PublicLayout } from './components/layout/PublicLayout';
 
 // Pages
 import { Home } from './pages/Home';
@@ -23,7 +25,7 @@ import { NotFound } from './pages/NotFound';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, role, loading } = useAuth();
 
   if (loading) {
     return (
@@ -37,11 +39,30 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+  if (allowedRoles && !allowedRoles.map((r) => r.toLowerCase()).includes(role)) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return children;
+  return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
+};
+
+// Route wrapper for pages accessible both publicly and by authenticated users
+const FlexibleRoute = ({ component: Component }) => {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return (
+      <AuthenticatedLayout>
+        <Component />
+      </AuthenticatedLayout>
+    );
+  }
+
+  return (
+    <PublicLayout>
+      <Component />
+    </PublicLayout>
+  );
 };
 
 export const App = () => {
@@ -49,89 +70,113 @@ export const App = () => {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
-          <div className="min-h-screen flex flex-col bg-[#F8FAF8] text-[#26332D]">
-            <Navbar />
-            <main className="flex-1">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/find-food" element={<FindFood />} />
-                <Route path="/donations/:id" element={<DonationDetails />} />
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/"
+              element={
+                <PublicLayout>
+                  <Home />
+                </PublicLayout>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <PublicLayout>
+                  <Login />
+                </PublicLayout>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicLayout>
+                  <Register />
+                </PublicLayout>
+              }
+            />
 
-                {/* Authenticated Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/create-donation"
-                  element={
-                    <ProtectedRoute allowedRoles={['donor', 'admin']}>
-                      <CreateDonation />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/my-donations"
-                  element={
-                    <ProtectedRoute allowedRoles={['donor', 'admin']}>
-                      <MyDonations />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/reservations"
-                  element={
-                    <ProtectedRoute>
-                      <Reservations />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/pickups"
-                  element={
-                    <ProtectedRoute>
-                      <Pickups />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/notifications"
-                  element={
-                    <ProtectedRoute>
-                      <Notifications />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminPanel />
-                    </ProtectedRoute>
-                  }
-                />
+            {/* Flexible Routes (Public or Authenticated) */}
+            <Route path="/find-food" element={<FlexibleRoute component={FindFood} />} />
+            <Route path="/donations/:id" element={<FlexibleRoute component={DonationDetails} />} />
 
-                {/* 404 Route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
+            {/* Authenticated Routes with Role Protection */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/create-donation"
+              element={
+                <ProtectedRoute allowedRoles={['donor', 'admin']}>
+                  <CreateDonation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-donations"
+              element={
+                <ProtectedRoute allowedRoles={['donor', 'admin']}>
+                  <MyDonations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reservations"
+              element={
+                <ProtectedRoute allowedRoles={['donor', 'recipient', 'admin']}>
+                  <Reservations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pickups"
+              element={
+                <ProtectedRoute allowedRoles={['volunteer', 'admin']}>
+                  <Pickups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminPanel />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 Route */}
+            <Route
+              path="*"
+              element={
+                <PublicLayout>
+                  <NotFound />
+                </PublicLayout>
+              }
+            />
+          </Routes>
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
@@ -139,4 +184,3 @@ export const App = () => {
 };
 
 export default App;
-

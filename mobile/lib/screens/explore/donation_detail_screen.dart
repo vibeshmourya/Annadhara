@@ -72,7 +72,7 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
                 controller: _notesController,
                 decoration: const InputDecoration(
                   labelText: 'Request Notes (Optional)',
-                  hintText: 'e.g. For our evening shelter distribution...',
+                  hintText: 'e.g. For our evening community meal distribution...',
                 ),
               ),
               const SizedBox(height: 20),
@@ -198,23 +198,33 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
                     _infoRow(Icons.location_on_outlined, 'Pickup Location', '${don.street}, ${don.city}'),
                     _infoRow(Icons.schedule, 'Pickup Deadline', dateFormat.format(don.pickupEndTime)),
                     _infoRow(Icons.thermostat_outlined, 'Storage Condition', don.storageHandling.replaceAll('_', ' ').toUpperCase()),
-                    _infoRow(
-                      Icons.warning_amber_rounded,
-                      'Allergens',
-                      don.allergens.isNotEmpty ? don.allergens.join(', ') : 'None reported',
-                    ),
+                    if (don.allergens.isNotEmpty)
+                      _infoRow(Icons.warning_amber_rounded, 'Allergens', don.allergens.join(', ')),
                   ]),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
-                  if (auth.user?.isRecipient == true && don.status == 'available' && don.availableQuantity > 0)
+                  // Request Food action
+                  if (auth.user?.isRecipient == true && don.availableQuantity > 0 && don.status == 'available')
                     SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton.icon(
                         onPressed: _showReserveDialog,
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Reserve This Food'),
+                        icon: const Icon(Icons.volunteer_activism_rounded),
+                        label: const Text('Request Surplus Food Reservation'),
+                      ),
+                    )
+                  else if (auth.user?.isRecipient == true && don.availableQuantity <= 0)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Center(
+                        child: Text('This food donation has been fully claimed', style: TextStyle(color: AppColors.secondaryText, fontWeight: FontWeight.bold)),
                       ),
                     ),
                 ],
@@ -234,13 +244,11 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
-  Widget _infoRow(IconData icon, String title, String value) {
+  Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -248,7 +256,7 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
         children: [
           Icon(icon, size: 16, color: AppColors.primaryGreen),
           const SizedBox(width: 8),
-          Text('$title: ', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryText)),
+          Text('$label: ', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryText)),
           Expanded(
             child: Text(value, style: const TextStyle(fontSize: 12, color: AppColors.secondaryText)),
           ),
@@ -257,4 +265,3 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
     );
   }
 }
-

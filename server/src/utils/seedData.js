@@ -12,7 +12,9 @@ const AuditLog = require('../models/AuditLog');
 
 const seed = async () => {
   try {
-    await connectDB();
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
     console.log('[Seed] Cleaning existing data...');
 
     await Promise.all([
@@ -29,156 +31,176 @@ const seed = async () => {
     console.log('[Seed] Creating Users & Organizations...');
 
     // 1. Admin
-    const admin = await User.create({
+    const admin = new User({
       name: 'Sarah Jenkins (Admin)',
       email: 'admin@foodbridge.org',
-      password: 'Admin@123',
-      role: 'admin',
+      role: 'ADMIN',
+      accountStatus: 'ACTIVE',
       phone: '+1 (555) 019-2834',
       isVerified: true,
       address: { street: '100 Metro Tower, Suite 400', city: 'Metropolis', state: 'NY', postalCode: '10001' },
       location: { type: 'Point', coordinates: [-73.9851, 40.7488] },
     });
+    admin.password = 'Admin@123';
+    await admin.save();
 
     // 2. Donors
-    const donor1 = await User.create({
+    const donor1 = new User({
       name: 'Chef Marco Rossi',
       email: 'donor@greengarden.com',
-      password: 'Donor@123',
-      role: 'donor',
+      role: 'DONOR',
+      accountStatus: 'ACTIVE',
       phone: '+1 (555) 349-8120',
       isVerified: true,
       address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
       location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
     });
-
-    const orgDonor1 = await Organization.create({
-      name: 'Green Garden Bistro',
-      type: 'restaurant',
-      registrationNumber: 'REST-NY-84920',
-      contactEmail: 'contact@greengarden.com',
-      contactPhone: '+1 (555) 349-8120',
-      address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
-      location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
-      verificationStatus: 'verified',
-      createdBy: donor1._id,
-    });
-    donor1.organization = orgDonor1._id;
+    donor1.password = 'Donor@123';
     await donor1.save();
 
-    const donor2 = await User.create({
+    const orgDonor1 = await Organization.create({
+      organizationName: 'Green Garden Bistro',
+      organizationType: 'Restaurant',
+      registrationNumber: 'REST-NY-84920',
+      email: 'contact@greengarden.com',
+      phone: '+1 (555) 349-8120',
+      address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
+      location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
+      verificationStatus: 'VERIFIED',
+      submittedAt: new Date(Date.now() - 30 * 24 * 3600 * 1000),
+      reviewedAt: new Date(Date.now() - 29 * 24 * 3600 * 1000),
+      reviewedBy: admin._id,
+      createdBy: donor1._id,
+    });
+    donor1.organizationId = orgDonor1._id;
+    await donor1.save();
+
+    const donor2 = new User({
       name: 'Elena Rostova',
       email: 'sunrise@bakery.com',
-      password: 'Donor@123',
-      role: 'donor',
+      role: 'DONOR',
+      accountStatus: 'ACTIVE',
       phone: '+1 (555) 882-9341',
       isVerified: true,
       address: { street: '78 Bakery Square', city: 'Metropolis', state: 'NY', postalCode: '10014' },
       location: { type: 'Point', coordinates: [-74.0048, 40.7335] },
     });
+    donor2.password = 'Donor@123';
+    await donor2.save();
 
     const orgDonor2 = await Organization.create({
-      name: 'Sunrise Artisanal Bakery',
-      type: 'bakery',
+      organizationName: 'Sunrise Artisanal Bakery',
+      organizationType: 'Restaurant',
       registrationNumber: 'BAKE-NY-19342',
-      contactEmail: 'orders@sunrisebakery.com',
-      contactPhone: '+1 (555) 882-9341',
+      email: 'orders@sunrisebakery.com',
+      phone: '+1 (555) 882-9341',
       address: { street: '78 Bakery Square', city: 'Metropolis', state: 'NY', postalCode: '10014' },
       location: { type: 'Point', coordinates: [-74.0048, 40.7335] },
-      verificationStatus: 'verified',
+      verificationStatus: 'VERIFIED',
+      submittedAt: new Date(Date.now() - 20 * 24 * 3600 * 1000),
+      reviewedAt: new Date(Date.now() - 19 * 24 * 3600 * 1000),
+      reviewedBy: admin._id,
       createdBy: donor2._id,
     });
-    donor2.organization = orgDonor2._id;
+    donor2.organizationId = orgDonor2._id;
     await donor2.save();
 
     // 3. Recipients (NGOs)
-    const recipient1 = await User.create({
+    const recipient1 = new User({
       name: 'David Miller',
       email: 'ngo@hopeharvest.org',
-      password: 'Recipient@123',
-      role: 'recipient',
+      role: 'RECIPIENT',
+      accountStatus: 'ACTIVE',
       phone: '+1 (555) 431-7729',
       isVerified: true,
       address: { street: '12 Community Ave', city: 'Metropolis', state: 'NY', postalCode: '10009' },
       location: { type: 'Point', coordinates: [-73.9805, 40.7262] },
     });
-
-    const orgRecipient1 = await Organization.create({
-      name: 'Hope Harvest Food Rescue',
-      type: 'ngo',
-      registrationNumber: '501C3-89472',
-      contactEmail: 'info@hopeharvest.org',
-      contactPhone: '+1 (555) 431-7729',
-      address: { street: '12 Community Ave', city: 'Metropolis', state: 'NY', postalCode: '10009' },
-      location: { type: 'Point', coordinates: [-73.9805, 40.7262] },
-      verificationStatus: 'verified',
-      verifiedBy: admin._id,
-      verifiedAt: new Date(),
-      createdBy: recipient1._id,
-    });
-    recipient1.organization = orgRecipient1._id;
+    recipient1.password = 'Recipient@123';
     await recipient1.save();
 
-    // Recipient 2 (Pending verification for admin module demo)
-    const recipient2 = await User.create({
+    const orgRecipient1 = await Organization.create({
+      organizationName: 'Hope Harvest Food Rescue',
+      organizationType: 'NGO',
+      registrationNumber: '501C3-89472',
+      email: 'info@hopeharvest.org',
+      phone: '+1 (555) 431-7729',
+      address: { street: '12 Community Ave', city: 'Metropolis', state: 'NY', postalCode: '10009' },
+      location: { type: 'Point', coordinates: [-73.9805, 40.7262] },
+      verificationStatus: 'VERIFIED',
+      submittedAt: new Date(Date.now() - 15 * 24 * 3600 * 1000),
+      reviewedAt: new Date(Date.now() - 14 * 24 * 3600 * 1000),
+      reviewedBy: admin._id,
+      createdBy: recipient1._id,
+    });
+    recipient1.organizationId = orgRecipient1._id;
+    await recipient1.save();
+
+    // Recipient 2 (Pending verification for admin module demonstration)
+    const recipient2 = new User({
       name: 'Maria Santos',
       email: 'care@communityfood.org',
-      password: 'Recipient@123',
-      role: 'recipient',
+      role: 'RECIPIENT',
+      accountStatus: 'ACTIVE',
       phone: '+1 (555) 672-1194',
       isVerified: false,
       address: { street: '89 Haven Shelter Way', city: 'Metropolis', state: 'NY', postalCode: '10002' },
       location: { type: 'Point', coordinates: [-73.992, 40.715] },
     });
+    recipient2.password = 'Recipient@123';
+    await recipient2.save();
 
     const orgRecipient2 = await Organization.create({
-      name: 'Community Care Shelter',
-      type: 'shelter',
+      organizationName: 'Community Care Shelter',
+      organizationType: 'Food Distribution Organization',
       registrationNumber: 'PENDING-REG-2026',
-      contactEmail: 'contact@communitycare.org',
-      contactPhone: '+1 (555) 672-1194',
+      email: 'contact@communitycare.org',
+      phone: '+1 (555) 672-1194',
       address: { street: '89 Haven Shelter Way', city: 'Metropolis', state: 'NY', postalCode: '10002' },
       location: { type: 'Point', coordinates: [-73.992, 40.715] },
-      verificationStatus: 'pending',
+      verificationStatus: 'PENDING',
       verificationNotes: 'Submitted tax exempt proof. Awaiting certificate verification.',
+      submittedAt: new Date(),
       createdBy: recipient2._id,
     });
-    recipient2.organization = orgRecipient2._id;
+    recipient2.organizationId = orgRecipient2._id;
     await recipient2.save();
 
     // 4. Volunteers
-    const volunteer1 = await User.create({
+    const volunteer1 = new User({
       name: 'Alex Rivera',
       email: 'alex@volunteer.org',
-      password: 'Volunteer@123',
-      role: 'volunteer',
+      role: 'VOLUNTEER',
+      accountStatus: 'ACTIVE',
       phone: '+1 (555) 728-4491',
       isVerified: true,
       address: { street: '310 Hudson St', city: 'Metropolis', state: 'NY', postalCode: '10013' },
       location: { type: 'Point', coordinates: [-74.006, 40.728] },
     });
+    volunteer1.password = 'Volunteer@123';
+    await volunteer1.save();
 
-    const volunteer2 = await User.create({
+    const volunteer2 = new User({
       name: 'Priya Sharma',
       email: 'priya@volunteer.org',
-      password: 'Volunteer@123',
-      role: 'volunteer',
+      role: 'VOLUNTEER',
+      accountStatus: 'ACTIVE',
       phone: '+1 (555) 914-3829',
       isVerified: true,
       address: { street: '55 5th Ave', city: 'Metropolis', state: 'NY', postalCode: '10003' },
       location: { type: 'Point', coordinates: [-73.994, 40.735] },
     });
+    volunteer2.password = 'Volunteer@123';
+    await volunteer2.save();
 
     console.log('[Seed] Creating Donations...');
 
     const now = new Date();
-    const in3Hours = new Date(now.getTime() + 3 * 3600 * 1000);
     const in6Hours = new Date(now.getTime() + 6 * 3600 * 1000);
     const in12Hours = new Date(now.getTime() + 12 * 3600 * 1000);
     const in24Hours = new Date(now.getTime() + 24 * 3600 * 1000);
     const in48Hours = new Date(now.getTime() + 48 * 3600 * 1000);
 
-    // Donation 1: Fresh Cooked Trays from Bistro
     const donation1 = await Donation.create({
       title: 'Nutritious Vegetable & Lentil Curry with Rice',
       category: 'cooked_meals',
@@ -206,7 +228,6 @@ const seed = async () => {
       safetyGuidelinesAccepted: true,
     });
 
-    // Donation 2: Artisan Breads from Bakery
     const donation2 = await Donation.create({
       title: 'Assorted Sourdough & Multigrain Artisan Breads',
       category: 'bakery_grains',
@@ -234,7 +255,6 @@ const seed = async () => {
       safetyGuidelinesAccepted: true,
     });
 
-    // Donation 3: Fresh Produce Crates
     const donation3 = await Donation.create({
       title: 'Fresh Organic Apples, Bananas & Crisp Greens',
       category: 'produce_fresh',
@@ -262,7 +282,6 @@ const seed = async () => {
       safetyGuidelinesAccepted: true,
     });
 
-    // Donation 4: Completed Historical Donation
     const donation4 = await Donation.create({
       title: 'Roasted Herb Chicken & Steamed Quinoa Bowls',
       category: 'cooked_meals',
@@ -291,7 +310,6 @@ const seed = async () => {
 
     console.log('[Seed] Creating Reservations & Handover records...');
 
-    // Reservation 1: Approved reservation on Donation 1
     const res1 = await Reservation.create({
       donation: donation1._id,
       recipient: recipient1._id,
@@ -306,7 +324,6 @@ const seed = async () => {
       approvedAt: new Date(now.getTime() - 30 * 60 * 1000),
     });
 
-    // Pickup Task for Reservation 1 assigned to volunteer Alex
     const pickupTask1 = await PickupTask.create({
       reservation: res1._id,
       donation: donation1._id,
@@ -325,7 +342,6 @@ const seed = async () => {
       ],
     });
 
-    // Historical Reservation & Handover for Donation 4
     const resHistorical = await Reservation.create({
       donation: donation4._id,
       recipient: recipient1._id,
@@ -420,4 +436,3 @@ if (require.main === module) {
 }
 
 module.exports = { seedDatabase: seed };
-

@@ -29,10 +29,11 @@ class AuthProvider with ChangeNotifier {
 
       if (token != null && userJson != null) {
         _user = UserModel.fromJson(jsonDecode(userJson));
-        // Verify with /me
+        // Verify with /api/auth/me
         final res = await ApiService.get(ApiConstants.me);
         if (res.success && res.data != null) {
-          _user = UserModel.fromJson(res.data);
+          final userData = res.data is Map && res.data['user'] != null ? res.data['user'] : res.data;
+          _user = UserModel.fromJson(userData);
           await StorageService.saveUserJson(jsonEncode(_user!.toJson()));
         }
       }
@@ -84,22 +85,36 @@ class AuthProvider with ChangeNotifier {
     required String phone,
     String? organizationName,
     String? organizationType,
+    String? registrationNumber,
+    String? street,
+    String? city,
   }) async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      final body = {
+      final Map<String, dynamic> body = {
         'name': name,
         'email': email,
         'password': password,
-        'role': role,
+        'role': role.toUpperCase(),
         'phone': phone,
       };
+
+      if (street != null || city != null) {
+        body['address'] = {
+          'street': street ?? '',
+          'city': city ?? '',
+        };
+      }
+
       if (organizationName != null && organizationName.isNotEmpty) {
         body['organizationName'] = organizationName;
-        body['organizationType'] = organizationType ?? 'restaurant';
+        body['organizationType'] = organizationType ?? 'Restaurant';
+        if (registrationNumber != null && registrationNumber.isNotEmpty) {
+          body['registrationNumber'] = registrationNumber;
+        }
       }
 
       final res = await ApiService.post(ApiConstants.register, body);
@@ -127,10 +142,65 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
+  Future<bool> updateProfile({required String name, required String phone}) async {
+    try {
+      final res = await ApiService.put(ApiConstants.profile, {
+        'name': name,
+        'phone': phone,
+      });
+
+      if (res.success && res.data != null) {
+        final userData = res.data is Map && res.data['user'] != null ? res.data['user'] : res.data;
+        _user = UserModel.fromJson(userData);
+        await StorageService.saveUserJson(jsonEncode(_user!.toJson()));
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = res.message;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+    return false;
+  }
+
+  Future<bool> createOrganization({
+    required String name,
+    required String type,
+    String? registrationNumber,
+    String? street,
+    String? city,
+  }) async {
+    try {
+      final body = {
+        'name': name,
+        'type': type,
+        'registrationNumber': registrationNumber ?? '',
+        'address': {
+          'street': street ?? '',
+          'city': city ?? '',
+        },
+      };
+
+      final res = await ApiService.post(ApiConstants.createOrg, body);
+      if (res.success) {
+        await loadSavedUser();
+        return true;
+      } else {
+        _errorMessage = res.message;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+    return false;
+  }
+
   Future<void> logout() async {
+    try {
+      await ApiService.post(ApiConstants.logout, {});
+    } catch (_) {}
     await StorageService.clearAuth();
     _user = null;
     notifyListeners();
   }
 }
-

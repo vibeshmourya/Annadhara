@@ -87,7 +87,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primaryGreen.withOpacity(0.3),
+                            color: AppColors.primaryGreen.withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -102,7 +102,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -123,7 +123,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                             user?.organizationName != null
                                 ? '${user!.organizationName} • Zero Waste Active'
                                 : 'Surplus Food Rescue & Shared Hope',
-                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12),
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
                           ),
                         ],
                       ),
@@ -232,7 +232,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: highlight ? AppColors.primaryGreen.withOpacity(0.4) : AppColors.border),
+          border: Border.all(color: highlight ? AppColors.primaryGreen.withValues(alpha: 0.4) : AppColors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,4 +259,3 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     );
   }
 }
-

@@ -11,7 +11,7 @@ const HandoverRecord = require('../models/HandoverRecord');
  */
 const getDashboardStats = async (req, res, next) => {
   try {
-    const role = req.user.role;
+    const role = (req.user.role || '').toLowerCase();
     const userId = req.user._id;
 
     if (role === 'donor') {

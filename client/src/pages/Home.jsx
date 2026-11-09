@@ -183,7 +183,7 @@ export const Home = () => {
       </section>
 
       {/* Role callouts */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="benefits" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-8 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between">
             <div className="space-y-3">

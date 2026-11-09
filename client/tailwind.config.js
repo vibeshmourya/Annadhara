@@ -14,6 +14,7 @@ export default {
           bg: '#F8FAF8',
           text: '#26332D',
           muted: '#718078',
+          border: '#E3EAE5',
           warning: '#E9A23B',
           error: '#D9534F',
         },

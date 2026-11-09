@@ -115,22 +115,82 @@ foodbridge/
 
 ### 2. Backend Setup (`server/`)
 
+The FoodBridge backend is a unified REST API built with Node.js, Express, MongoDB, and Mongoose that serves both the React web application and the Flutter mobile application.
+
+#### Prerequisites & Environment
+Ensure you have Node.js 18+ installed. The server includes an automated in-memory MongoDB fallback (`mongodb-memory-server`) so you can run the backend immediately without having a local MongoDB service pre-installed.
+
+Create or verify `server/.env` (a template is available in `server/.env.example`):
+```env
+PORT=5000
+MONGODB_URI=mongodb://127.0.0.1:27017/foodbridge
+JWT_SECRET=your_secure_jwt_secret_key_here
+JWT_EXPIRES_IN=7d
+NODE_ENV=development
+```
+
+#### Installation & Startup
 ```bash
-# Navigate to server
+# Navigate to the backend directory
 cd server
 
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server with hot-reload
+npm run dev
+
+# Or start in standard mode
 npm start
 ```
-The server will boot at `http://localhost:5000`. If MongoDB is empty, it will automatically seed sample accounts and food listings!
+The server will boot at `http://localhost:5000`. If the database is freshly initialized, it will auto-seed demo accounts, organizations, and sample listings!
 
-To run the automated backend test suite verifying all 12 modules:
+#### Running the Phase 1 Automated Test Suite
+To execute the comprehensive automated integration test suite validating all 14 Phase 1 requirements (MongoDB connectivity, health check, registration, duplicate checks, bcrypt hashing, login, authentication, role-based authorization, profile protection, organization management, admin verification, and error handling):
 ```bash
+# Inside server/
 npm test
 ```
+
+To run the extended multi-module integration test suite (covering reservations, pickups, handover verification codes, and analytics):
+```bash
+npm run test:integration
+```
+
+---
+
+## 🏛️ Phase 1: Backend Architecture & Implementation Details
+
+### 1. Database Collections & Mongoose Models (`server/src/models/`)
+- **`User` (`users` collection):**
+  - Fields: `name`, `email` (unique index), `passwordHash` (hidden via `select: false`), `phone`, `role` (`DONOR`, `RECIPIENT`, `VOLUNTEER`, `ADMIN`), `accountStatus` (`ACTIVE`, `INACTIVE`, `SUSPENDED`), `organizationId` (ref `Organization`), `address`, `location` (GeoJSON Point with 2dsphere index), `isVerified`, `timestamps`.
+  - Methods: `comparePassword(candidatePassword)`, virtual `password` setter with bcrypt hashing pre-save hook, `toJSON()` strictly omitting `passwordHash`.
+- **`Organization` (`organizations` collection):**
+  - Fields: `organizationName`, `organizationType` (`Restaurant`, `Hotel`, `College Canteen`, `Event Organizer`, `NGO`, `Food Distribution Organization`, `Other`), `description`, `contactPerson`, `email`, `phone`, `address`, `location` (GeoJSON Point), `verificationStatus` (`PENDING`, `VERIFIED`, `REJECTED`), `verificationNotes`, `submittedAt`, `reviewedAt`, `reviewedBy` (ref `User`), `registrationNumber`, `createdBy` (ref `User`).
+- **Additional Domain Models:** `Donation`, `Reservation`, `PickupTask`, `HandoverRecord`, `Notification`, `AuditLog`.
+
+### 2. Core REST API Endpoints
+
+| Method | Endpoint | Access / Role | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/health` | Public | Health check: API status (`online`), DB status (`connected`), server timestamp |
+| `POST` | `/api/auth/register` | Public (`DONOR`, `RECIPIENT`, `VOLUNTEER`) | User registration with input validation & bcrypt hashing. Rejects `ADMIN` role with HTTP 403 |
+| `POST` | `/api/auth/login` | Public | Authenticates credentials, verifies active account status, issues JWT token |
+| `GET` | `/api/auth/me` | Authenticated | Retrieves current authenticated user profile & linked organization |
+| `POST` | `/api/auth/logout` | Authenticated | Server-side token invalidation; revokes active JWT token |
+| `GET` | `/api/users/me` | Authenticated | View own permitted user profile details |
+| `PATCH` | `/api/users/me` | Authenticated | Update permitted profile fields (blocks tampering with `role`, `accountStatus`, `email`) |
+| `POST` | `/api/organizations` | Authenticated | Submit organization profile (automatically initialized with `PENDING` status) |
+| `GET` | `/api/organizations/me` | Authenticated | View authenticated user's organization and verification status |
+| `PATCH` | `/api/organizations/me` | Authenticated | Update organization details (disallows user self-verification) |
+| `GET` | `/api/admin/organizations` | Admin Only | List all organizations with optional `?status=PENDING&type=NGO` filter |
+| `PATCH` | `/api/admin/organizations/:id/verification` | Admin Only | Approve (`VERIFIED`) or decline (`REJECTED`) an organization, recording reviewer and audit logs |
+
+### 3. Security, Authorization & Error Handling Middleware
+- **`protect` Middleware:** Verifies JWT Bearer token, checks if token was revoked via `/api/auth/logout`, verifies user exists and account status is `ACTIVE`.
+- **`authorize(...roles)` Middleware:** Enforces strict role-based authorization on the backend, returning HTTP 403 Forbidden with clean JSON if unauthorized.
+- **`errorHandler` Middleware:** Centralized express error handler ensuring all error responses follow `{ "success": false, "message": "..." }`, converting Mongoose CastError, duplicate keys (11000), and validation errors into user-friendly HTTP responses without exposing stack traces or secrets.
+- **Server-Side Token Revocation (`tokenService.js`):** Stateful revocation registry ensuring that logged-out tokens cannot be reused.
 
 ---
 

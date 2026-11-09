@@ -5,8 +5,12 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('foodbridge_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('foodbridge_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
   const [token, setToken] = useState(() => localStorage.getItem('foodbridge_token'));
   const [loading, setLoading] = useState(true);
@@ -17,11 +21,19 @@ export const AuthProvider = ({ children }) => {
       if (storedToken) {
         try {
           const res = await authApi.getMe();
-          setUser(res.data.data);
-          localStorage.setItem('foodbridge_user', JSON.stringify(res.data.data));
+          if (res.data.success && res.data.data) {
+            setUser(res.data.data);
+            localStorage.setItem('foodbridge_user', JSON.stringify(res.data.data));
+          }
         } catch (error) {
-          console.warn('Session expired or invalid token', error);
-          logout();
+          console.warn('[Auth] Session validation failed or token expired:', error?.message);
+          // Only clear if 401 Unauthorized
+          if (error.response?.status === 401) {
+            localStorage.removeItem('foodbridge_token');
+            localStorage.removeItem('foodbridge_user');
+            setToken(null);
+            setUser(null);
+          }
         }
       }
       setLoading(false);
@@ -50,11 +62,19 @@ export const AuthProvider = ({ children }) => {
     return newUser;
   };
 
-  const logout = () => {
-    localStorage.removeItem('foodbridge_token');
-    localStorage.removeItem('foodbridge_user');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      if (token) {
+        await authApi.logout();
+      }
+    } catch (err) {
+      console.warn('[Auth] Server logout notification:', err?.message);
+    } finally {
+      localStorage.removeItem('foodbridge_token');
+      localStorage.removeItem('foodbridge_user');
+      setToken(null);
+      setUser(null);
+    }
   };
 
   const updateUser = (updatedUser) => {
@@ -62,10 +82,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('foodbridge_user', JSON.stringify(updatedUser));
   };
 
-  const isDonor = user?.role === 'donor';
-  const isRecipient = user?.role === 'recipient';
-  const isVolunteer = user?.role === 'volunteer';
-  const isAdmin = user?.role === 'admin';
+  const roleNormalized = (user?.role || '').toLowerCase();
+  const isDonor = roleNormalized === 'donor';
+  const isRecipient = roleNormalized === 'recipient';
+  const isVolunteer = roleNormalized === 'volunteer';
+  const isAdmin = roleNormalized === 'admin';
 
   return (
     <AuthContext.Provider
@@ -74,6 +95,7 @@ export const AuthProvider = ({ children }) => {
         token,
         loading,
         isAuthenticated: !!user,
+        role: roleNormalized,
         isDonor,
         isRecipient,
         isVolunteer,
@@ -96,4 +118,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

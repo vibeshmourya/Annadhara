@@ -11,7 +11,7 @@ class AppColors {
   // Typography & Content
   static const Color primaryText = Color(0xFF26332D);
   static const Color secondaryText = Color(0xFF718078);
-  static const Color border = Color(0xFFE6EAE7);
+  static const Color border = Color(0xFFE3EAE5);
 
   // Status Alerts
   static const Color warning = Color(0xFFE9A23B);
@@ -19,4 +19,3 @@ class AppColors {
   static const Color success = Color(0xFF2E7D5B);
   static const Color info = Color(0xFF3B82F6);
 }
-

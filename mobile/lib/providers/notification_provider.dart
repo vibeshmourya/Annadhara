@@ -33,12 +33,14 @@ class NotificationProvider with ChangeNotifier {
   Future<void> markAsRead(String id) async {
     try {
       await ApiService.patch('/notifications/$id/read', {});
-      final index = _notifications.indexWhere((n) => n.id == id);
-      if (index != -1) {
-        // Update local item
-        fetchNotifications();
-      }
+      fetchNotifications();
+    } catch (_) {}
+  }
+
+  Future<void> markAllAsRead() async {
+    try {
+      await ApiService.patch('/notifications/read-all', {});
+      fetchNotifications();
     } catch (_) {}
   }
 }
-

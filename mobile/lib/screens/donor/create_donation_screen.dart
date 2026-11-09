@@ -127,7 +127,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
             const SizedBox(height: 12),
 
             DropdownButtonFormField<String>(
-              value: _category,
+              initialValue: _category,
               decoration: const InputDecoration(labelText: 'Category *'),
               items: const [
                 DropdownMenuItem(value: 'cooked_meals', child: Text('🍲 Cooked Meals')),
@@ -162,7 +162,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _unit,
+                    initialValue: _unit,
                     decoration: const InputDecoration(labelText: 'Unit *'),
                     items: const [
                       DropdownMenuItem(value: 'meals', child: Text('Meals')),
@@ -178,7 +178,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
             const SizedBox(height: 12),
 
             DropdownButtonFormField<String>(
-              value: _storage,
+              initialValue: _storage,
               decoration: const InputDecoration(labelText: 'Storage & Handling *'),
               items: const [
                 DropdownMenuItem(value: 'hot_held', child: Text('🔥 Hot Held (Above 60°C)')),
@@ -234,4 +234,3 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
     );
   }
 }
-

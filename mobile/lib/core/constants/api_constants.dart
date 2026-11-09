@@ -15,18 +15,40 @@ class ApiConstants {
     return 'http://localhost:5000/api';
   }
 
-  // Endpoints
+  // Auth endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
+  static const String logout = '/auth/logout';
   static const String me = '/auth/me';
-  static const String updateProfile = '/auth/profile';
 
+  // User & Profile
+  static const String profile = '/users/profile';
+
+  // Organizations
+  static const String myOrg = '/organizations/me';
+  static const String createOrg = '/organizations';
+
+  // Donations
   static const String donations = '/donations';
-  static const String myDonations = '/donations/my-donations';
-  static const String reservations = '/reservations';
-  static const String pickups = '/pickups';
-  static const String handoverConfirm = '/handover/confirm';
-  static const String notifications = '/notifications';
-  static const String dashboardStats = '/dashboard/stats';
-}
+  static const String myDonations = '/donations/my';
 
+  // Reservations
+  static const String reservations = '/reservations';
+
+  // Pickups
+  static const String pickups = '/pickups';
+
+  // Handover
+  static const String handoverConfirm = '/handover/confirm';
+
+  // Notifications
+  static const String notifications = '/notifications';
+
+  // Dashboard stats
+  static const String dashboardStats = '/dashboard/stats';
+
+  // Admin
+  static const String adminOrganizations = '/admin/organizations';
+  static const String adminUsers = '/admin/users';
+  static const String adminAuditLogs = '/admin/audit-logs';
+}

@@ -17,9 +17,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _orgNameController = TextEditingController();
+  final _regNumberController = TextEditingController();
+  final _cityController = TextEditingController();
 
-  String _selectedRole = 'donor';
-  String _selectedOrgType = 'restaurant';
+  String _selectedRole = 'DONOR';
+  String _selectedOrgType = 'Restaurant';
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -28,6 +31,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _orgNameController.dispose();
+    _regNumberController.dispose();
+    _cityController.dispose();
     super.dispose();
   }
 
@@ -45,6 +50,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters')),
+      );
+      return;
+    }
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final success = await auth.register(
       name: name,
@@ -52,8 +64,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: password,
       role: _selectedRole,
       phone: phone,
-      organizationName: _selectedRole != 'volunteer' ? orgName : null,
-      organizationType: _selectedRole != 'volunteer' ? _selectedOrgType : null,
+      organizationName: _selectedRole != 'VOLUNTEER' ? orgName : null,
+      organizationType: _selectedRole != 'VOLUNTEER' ? _selectedOrgType : null,
+      registrationNumber: _regNumberController.text.trim(),
+      city: _cityController.text.trim(),
     );
 
     if (success && mounted) {
@@ -89,11 +103,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _roleButton('Donor', 'donor', Icons.restaurant),
+                  _roleButton('Donor', 'DONOR', Icons.restaurant),
                   const SizedBox(width: 8),
-                  _roleButton('Recipient', 'recipient', Icons.shield),
+                  _roleButton('Recipient', 'RECIPIENT', Icons.shield),
                   const SizedBox(width: 8),
-                  _roleButton('Volunteer', 'volunteer', Icons.delivery_dining),
+                  _roleButton('Volunteer', 'VOLUNTEER', Icons.delivery_dining),
                 ],
               ),
               const SizedBox(height: 20),
@@ -119,30 +133,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 12),
 
-              if (_selectedRole != 'volunteer') ...[
+              if (_selectedRole != 'VOLUNTEER') ...[
                 TextField(
                   controller: _orgNameController,
                   decoration: InputDecoration(
-                    labelText: _selectedRole == 'donor' ? 'Business / Restaurant Name *' : 'NGO / Shelter Name *',
+                    labelText: _selectedRole == 'DONOR' ? 'Business / Restaurant Name *' : 'NGO / Shelter Name *',
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 DropdownButtonFormField<String>(
-                  value: _selectedOrgType,
+                  initialValue: _selectedOrgType,
                   decoration: const InputDecoration(labelText: 'Organization Type *'),
-                  items: (_selectedRole == 'donor'
-                          ? [
-                              const DropdownMenuItem(value: 'restaurant', child: Text('Restaurant')),
-                              const DropdownMenuItem(value: 'bakery', child: Text('Bakery & Cafe')),
-                              const DropdownMenuItem(value: 'hotel', child: Text('Hotel')),
-                              const DropdownMenuItem(value: 'canteen', child: Text('Canteen')),
+                  items: (_selectedRole == 'DONOR'
+                          ? const [
+                              DropdownMenuItem(value: 'Restaurant', child: Text('Restaurant')),
+                              DropdownMenuItem(value: 'Hotel', child: Text('Hotel')),
+                              DropdownMenuItem(value: 'College Canteen', child: Text('College Canteen')),
+                              DropdownMenuItem(value: 'Event Organizer', child: Text('Event Organizer')),
                             ]
-                          : [
-                              const DropdownMenuItem(value: 'ngo', child: Text('Non-Profit NGO')),
-                              const DropdownMenuItem(value: 'shelter', child: Text('Community Shelter')),
-                              const DropdownMenuItem(value: 'food_bank', child: Text('Food Bank')),
-                              const DropdownMenuItem(value: 'charity', child: Text('Charity')),
+                          : const [
+                              DropdownMenuItem(value: 'NGO', child: Text('Non-Profit NGO')),
+                              DropdownMenuItem(value: 'Food Distribution Organization', child: Text('Food Distribution Organization')),
                             ])
                       .toList(),
                   onChanged: (val) {
@@ -150,12 +162,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
+
+                TextField(
+                  controller: _regNumberController,
+                  decoration: const InputDecoration(labelText: 'Registration / Tax Number (Optional)'),
+                ),
+                const SizedBox(height: 12),
+
+                TextField(
+                  controller: _cityController,
+                  decoration: const InputDecoration(labelText: 'City *'),
+                ),
+                const SizedBox(height: 12),
               ],
 
               TextField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password (min 6 characters) *'),
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Password (min 6 characters) *',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: AppColors.secondaryText,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -182,8 +216,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         onTap: () {
           setState(() {
             _selectedRole = roleValue;
-            if (roleValue == 'donor') _selectedOrgType = 'restaurant';
-            if (roleValue == 'recipient') _selectedOrgType = 'ngo';
+            if (roleValue == 'DONOR') _selectedOrgType = 'Restaurant';
+            if (roleValue == 'RECIPIENT') _selectedOrgType = 'NGO';
           });
         },
         child: Container(
@@ -212,4 +246,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-

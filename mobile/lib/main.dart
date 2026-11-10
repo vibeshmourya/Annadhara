@@ -12,11 +12,11 @@ import 'screens/main_navigation_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FoodBridgeApp());
+  runApp(const AnnadharaApp());
 }
 
-class FoodBridgeApp extends StatelessWidget {
-  const FoodBridgeApp({super.key});
+class AnnadharaApp extends StatelessWidget {
+  const AnnadharaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,7 @@ class FoodBridgeApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: MaterialApp(
-        title: 'FoodBridge',
+        title: 'Annadhara',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const AuthGate(),
@@ -48,7 +48,28 @@ class AuthGate extends StatelessWidget {
     if (auth.isLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: AppColors.primaryGreen),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.volunteer_activism_rounded, color: AppColors.primaryGreen, size: 48),
+              SizedBox(height: 12),
+              Text(
+                'Annadhara',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Surplus Food. Shared Hope. Zero Waste.',
+                style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
+              ),
+              SizedBox(height: 18),
+              CircularProgressIndicator(color: AppColors.primaryGreen),
+            ],
+          ),
         ),
       );
     }

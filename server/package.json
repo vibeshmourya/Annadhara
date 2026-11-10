@@ -1,7 +1,7 @@
 {
   "name": "foodbridge-server",
   "version": "1.0.0",
-  "description": "Shared REST API backend for FoodBridge Surplus Food Rescue and Donation Network",
+  "description": "Shared REST API backend for Annadhara Surplus Food Rescue and Donation Network (MERNOVA X 2026)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,14 +12,15 @@
     "test:phase4": "node tests/phase4_integration.test.js"
   },
   "keywords": [
-    "foodbridge",
+    "annadhara",
+    "team-seva-shakti",
     "food-donation",
     "food-rescue",
     "mern",
     "flutter",
     "rest-api"
   ],
-  "author": "FoodBridge Team",
+  "author": "Team Seva Shakti",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",

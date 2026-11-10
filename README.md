@@ -1,10 +1,11 @@
-# FoodBridge — Surplus Food Rescue and Donation Network
+# Annadhara — Surplus Food Rescue and Donation Network
 
-> **Tagline:** *Surplus Food. Shared Hope. Zero Waste.*
+> **Tagline:** *Surplus Food. Shared Hope. Zero Waste.*  
+> **Project Title:** Annadhara | **Team:** Team Seva Shakti | **Event:** MERNOVA X 2026
 
-FoodBridge connects businesses that have surplus edible food (restaurants, bakeries, canteens, hotels, caterers) with recipient charities, NGOs, and community kitchens that urgently need it. The platform coordinates the entire lifecycle from surplus food publication, real-time discovery, and atomic reservation to volunteer transport logistics and verifiable 6-character code / QR-based handover confirmation.
+**Annadhara** connects businesses that have surplus edible food (restaurants, bakeries, canteens, hotels, caterers) with recipient charities, NGOs, and community kitchens that urgently need it. The platform coordinates the entire lifecycle from surplus food publication, real-time discovery, and atomic reservation to volunteer transport logistics and verifiable 6-character code / QR-based handover confirmation.
 
-FoodBridge provides seamless cross-platform synchronization between a **React.js Web Application** and a **Flutter Mobile Application**, both communicating with a single shared **Node.js + Express.js REST API** and **MongoDB** database.
+Annadhara provides seamless cross-platform synchronization between a **React.js Web Application** and a **Flutter Mobile Application**, both communicating with a single shared **Node.js + Express.js REST API** and **MongoDB** database.
 
 ---
 
@@ -12,7 +13,7 @@ FoodBridge provides seamless cross-platform synchronization between a **React.js
 
 Millions of tons of edible food are wasted daily by commercial establishments, while local shelters and charitable organizations face chronic food shortages. Traditional food donation relies on ad-hoc phone calls and fragmented logistics. 
 
-FoodBridge eliminates these inefficiencies through:
+Annadhara eliminates these inefficiencies through:
 - **Zero-Waste Inventory Integrity**: Atomic database reservation prevents oversubscription and food waste.
 - **Explainable Geospatial & Urgency Matching**: Prioritizes donations closest to expiration and nearest to verified shelters.
 - **Closed-Loop Verification**: 6-character verification codes and dynamic QR codes ensure transparent, accountable handovers.
@@ -113,7 +114,7 @@ Both the React and Flutter applications adhere to a consistent, high-contrast, w
 
 ## 5. Mathematical Quantity Invariants
 
-FoodBridge enforces mathematical inventory accounting at the database level:
+Annadhara enforces mathematical inventory accounting at the database level:
 
 $$\text{totalQuantity} = \text{availableQuantity} + \text{reservedQuantity} + \text{collectedQuantity}$$
 $$\text{availableQuantity} \ge 0, \quad \text{reservedQuantity} \ge 0, \quad \text{collectedQuantity} \ge 0$$
@@ -129,7 +130,7 @@ When a reservation is created, an atomic MongoDB query conditionally decrements 
 ## 6. Repository Structure
 
 ```
-foodbridge/
+annadhara/ (repository root)
 ├── client/                     # React.js Web Application (Vite + Tailwind CSS)
 │   ├── src/
 │   │   ├── api/                # Axios instance & typed API services
@@ -260,7 +261,7 @@ npm --prefix client run build
 
 ## 10. Live Project Demonstration Guide (5–7 Minutes)
 
-1. **Introduction (1 min):** Highlight the food waste problem and present the FoodBridge mission: *Surplus Food. Shared Hope. Zero Waste.*
+1. **Introduction (1 min):** Highlight the food waste problem and present the **Annadhara** mission by **Team Seva Shakti** (MERNOVA X 2026): *Surplus Food. Shared Hope. Zero Waste.*
 2. **Donor Publication (1 min):** Log in as **Donor Bistro** on the React website. Publish 30 portions of Fresh Pasta with hot-held storage and allergen tags.
 3. **Cross-Platform Synchronization (1 min):** Open the Flutter mobile app. Navigate to **Explore / Find Food**. The newly published pasta listing appears immediately.
 4. **Recipient Reservation & Oversubscription Defense (1.5 min):** Log in as **Recipient NGO** on mobile. Reserve 15 portions. Show the available quantity instantly reduce from 30 to 15. Demonstrate that requesting more than 15 is rejected.
@@ -274,8 +275,12 @@ npm --prefix client run build
 
 ## 11. Team Contributions & License
 
+- **Team Name:** Team Seva Shakti
+- **Project Title:** Annadhara (MERNOVA X 2026)
 - **Architecture & Full-Stack Development:** MERN Stack & Flutter Integration.
 - **UI/UX Design:** Material 3 & Tailwind Nature-Inspired Design System.
 - **QA & Security Engineering:** Concurrency, RBAC, and automated test suites.
 
-**License:** ISC License — Developed for the FoodBridge Surplus Food Rescue and Donation Network.
+> **Technical Compatibility Note:** Internal database name (`foodbridge`), npm package names, localStorage keys, Android `applicationId` (`com.example.foodbridge_mobile`), and seeded demo admin email (`admin@foodbridge.org`) are intentionally retained for backward compatibility with existing MongoDB collections and build configurations.
+
+**License:** ISC License — Developed by **Team Seva Shakti** for **Annadhara — Surplus Food Rescue and Donation Network**.

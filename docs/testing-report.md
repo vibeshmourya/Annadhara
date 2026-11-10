@@ -1,5 +1,6 @@
-# FoodBridge Quality Assurance & Testing Report
+# Annadhara Quality Assurance & Testing Report
 
+**Project Title:** Annadhara | **Team:** Team Seva Shakti (MERNOVA X 2026)  
 **Date:** November 2026  
 **Status:** All Test Suites Passed (100% Success Rate)
 

@@ -73,8 +73,9 @@ export const Login = () => {
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#2E7D5B] text-white shadow-md mx-auto">
           <HeartHandshake className="w-7 h-7" />
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#26332D] tracking-tight">Sign in to FoodBridge</h2>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#26332D] tracking-tight">Sign in to Annadhara</h2>
         <p className="text-xs sm:text-sm text-[#718078]">Surplus Food. Shared Hope. Zero Waste.</p>
+        <p className="text-[11px] font-semibold text-[#2E7D5B]">Team Seva Shakti • MERNOVA X 2026</p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">

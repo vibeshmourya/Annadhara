@@ -29,8 +29,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAF8]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAF8] space-y-3">
         <div className="w-10 h-10 border-4 border-[#EAF4EE] border-t-[#2E7D5B] rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-[#718078]">Loading Annadhara...</p>
       </div>
     );
   }

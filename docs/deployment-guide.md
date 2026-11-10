@@ -1,6 +1,7 @@
-# FoodBridge Production Deployment Guide
+# Annadhara Production Deployment Guide
 
-This guide covers deployment procedures for all components of the FoodBridge Surplus Food Rescue and Donation Network.
+**Project Title:** Annadhara | **Team:** Team Seva Shakti (MERNOVA X 2026)  
+This guide covers deployment procedures for all components of the Annadhara Surplus Food Rescue and Donation Network.
 
 ---
 
@@ -10,15 +11,15 @@ This guide covers deployment procedures for all components of the FoodBridge Sur
    - Log in to [MongoDB Atlas](https://www.mongodb.com/atlas).
    - Create a free tier (M0) or dedicated production cluster in your preferred region.
 2. **Configure Database User:**
-   - Under **Database Access**, create a user (e.g. `foodbridge_app`).
+   - Under **Database Access**, create a user (e.g. `annadhara_app`).
    - Use a cryptographically secure password.
    - Assign the `readWriteAnyDatabase` or scoped database role.
 3. **Configure Network Access:**
    - Under **Network Access**, whitelist your production backend IP addresses.
    - For serverless hosts (e.g. Render/Railway), allow access from anywhere (`0.0.0.0/0`) with strict database authentication credentials.
-4. **Obtain Connection String:**
+4. **Obtain Connection String** (note: database name `foodbridge` is retained for existing MongoDB compatibility unless provisioning a brand-new cluster):
    ```
-   mongodb+srv://<username>:<password>@cluster0.foodbridge.mongodb.net/foodbridge?retryWrites=true&w=majority
+   mongodb+srv://<username>:<password>@cluster0.annadhara.mongodb.net/foodbridge?retryWrites=true&w=majority
    ```
 
 ---
@@ -32,10 +33,10 @@ This guide covers deployment procedures for all components of the FoodBridge Sur
    ```env
    NODE_ENV=production
    PORT=5000
-   MONGO_URI=mongodb+srv://<username>:<password>@cluster0.foodbridge.mongodb.net/foodbridge?retryWrites=true&w=majority
-   JWT_SECRET=production_super_secure_random_64_char_key_2026_foodbridge_protect
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.annadhara.mongodb.net/foodbridge?retryWrites=true&w=majority
+   JWT_SECRET=<your_64_char_random_production_secret>
    JWT_EXPIRES_IN=7d
-   CLIENT_URL=https://app.foodbridge.org
+   CLIENT_URL=https://app.annadhara.org
    ```
 
 2. **Start Script:**
@@ -45,7 +46,7 @@ This guide covers deployment procedures for all components of the FoodBridge Sur
    ```
    For VPS deployments, use PM2 for process monitoring:
    ```powershell
-   pm2 start server.js --name "foodbridge-api"
+   pm2 start server.js --name "annadhara-api"
    pm2 startup
    pm2 save
    ```
@@ -53,7 +54,7 @@ This guide covers deployment procedures for all components of the FoodBridge Sur
 3. **Verify Deployment:**
    Test the public health check endpoint:
    ```bash
-   curl -i https://api.foodbridge.org/api/health
+   curl -i https://api.annadhara.org/api/health
    ```
    Verify that `status` is `"online"` and database is `"connected"`.
 
@@ -66,7 +67,7 @@ This guide covers deployment procedures for all components of the FoodBridge Sur
 1. **Environment Configuration:**
    Set the production API base URL:
    ```env
-   VITE_API_BASE_URL=https://api.foodbridge.org/api
+   VITE_API_BASE_URL=https://api.annadhara.org/api
    ```
 
 2. **Build Settings:**
@@ -95,7 +96,7 @@ This guide covers deployment procedures for all components of the FoodBridge Sur
    Update `mobile/lib/core/constants/api_constants.dart`:
    ```dart
    static String get baseUrl {
-     return 'https://api.foodbridge.org/api';
+     return 'https://api.annadhara.org/api';
    }
    ```
 

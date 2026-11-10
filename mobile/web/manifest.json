@@ -1,11 +1,11 @@
 {
-    "name": "foodbridge_mobile",
-    "short_name": "foodbridge_mobile",
+    "name": "Annadhara",
+    "short_name": "Annadhara",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F8FAF8",
+    "theme_color": "#2E7D5B",
+    "description": "Annadhara — Surplus Food. Shared Hope. Zero Waste. Developed by Team Seva Shakti.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -35,7 +35,7 @@ export const Navbar = () => {
               <HeartHandshake className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-xl font-extrabold text-[#26332D] tracking-tight">FoodBridge</span>
+              <span className="text-xl font-extrabold text-[#26332D] tracking-tight">Annadhara</span>
               <span className="hidden sm:inline-block ml-2 text-[10px] font-semibold text-[#2E7D5B] uppercase tracking-wider bg-[#EAF4EE] px-2 py-0.5 rounded-full">
                 Zero Waste
               </span>

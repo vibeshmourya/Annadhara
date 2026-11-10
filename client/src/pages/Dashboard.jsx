@@ -135,7 +135,7 @@ export const Dashboard = () => {
           </h1>
           <p className="text-xs sm:text-sm text-[#718078] mt-1">
             {user?.organization?.name ? `${user.organization.name} • ` : ''}
-            Surplus Food Rescue & Zero Waste Dashboard
+            Annadhara Surplus Food Rescue & Zero Waste Dashboard
           </p>
         </div>
 

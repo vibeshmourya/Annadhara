@@ -154,7 +154,7 @@ class ActivityProvider with ChangeNotifier {
       final res = await ApiService.post(ApiConstants.handoverConfirm, {
         'reservationId': reservationId,
         'handoverCode': code,
-        'notes': notes ?? 'Verified via FoodBridge mobile application',
+        'notes': notes ?? 'Verified via Annadhara mobile application',
         'verificationMethod': method,
       });
       if (res.success) {

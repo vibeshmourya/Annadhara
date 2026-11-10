@@ -407,12 +407,12 @@ const seed = async () => {
         action: 'SYSTEM_INITIALIZED',
         role: 'system',
         entityType: 'System',
-        details: { message: 'FoodBridge database seeded with demo data' },
+        details: { message: 'Annadhara database seeded with demo data' },
       },
     ]);
 
     console.log('-----------------------------------------------------------');
-    console.log('✅ FoodBridge database successfully seeded!');
+    console.log('✅ Annadhara database successfully seeded!');
     console.log('-----------------------------------------------------------');
     console.log('Sample Accounts for Testing:');
     console.log('1. Admin:     admin@foodbridge.org        / Admin@123');

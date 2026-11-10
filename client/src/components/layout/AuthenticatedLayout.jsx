@@ -120,8 +120,8 @@ export const AuthenticatedLayout = ({ children }) => {
               <HeartHandshake className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-xl font-extrabold text-[#26332D] tracking-tight">FoodBridge</span>
-              <p className="text-[10px] text-[#718078] font-medium leading-none mt-0.5">Surplus Rescue Network</p>
+              <span className="text-xl font-extrabold text-[#26332D] tracking-tight">Annadhara</span>
+              <p className="text-[10px] text-[#718078] font-medium leading-none mt-0.5">By Team Seva Shakti</p>
             </div>
           </Link>
 
@@ -213,7 +213,7 @@ export const AuthenticatedLayout = ({ children }) => {
               <div className="w-8 h-8 rounded-lg bg-[#2E7D5B] text-white flex items-center justify-center">
                 <HeartHandshake className="w-5 h-5" />
               </div>
-              <span className="font-extrabold text-[#26332D] text-base">FoodBridge</span>
+              <span className="font-extrabold text-[#26332D] text-base">Annadhara</span>
             </Link>
 
             {/* Desktop Tagline / Welcome */}
@@ -296,7 +296,7 @@ export const AuthenticatedLayout = ({ children }) => {
                   <HeartHandshake className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-lg font-extrabold text-[#26332D]">FoodBridge</span>
+                  <span className="text-lg font-extrabold text-[#26332D]">Annadhara</span>
                   <p className="text-[10px] text-[#718078]">{roleLabels[role]}</p>
                 </div>
               </div>

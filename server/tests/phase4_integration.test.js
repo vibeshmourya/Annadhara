@@ -1,5 +1,6 @@
 /**
- * FOODBRIDGE PHASE 4: END-TO-END CROSS-PLATFORM & SECURITY INTEGRATION TEST SUITE
+ * ANNADHARA PHASE 4: END-TO-END CROSS-PLATFORM & SECURITY INTEGRATION TEST SUITE
+ * Developed by Team Seva Shakti (MERNOVA X 2026)
  * Tests complete cross-platform scenarios A-F, RBAC, atomic concurrency, and handover security.
  */
 
@@ -60,7 +61,7 @@ function request(method, path, data = null, token = null) {
 
 async function runPhase4Tests() {
   console.log('\n================================================================');
-  console.log('🌿 FOODBRIDGE PHASE 4: FINAL INTEGRATION & SECURITY TEST SUITE');
+  console.log('🌿 ANNADHARA PHASE 4: FINAL INTEGRATION & SECURITY TEST SUITE');
   console.log('================================================================\n');
 
   let passed = 0;
@@ -224,7 +225,7 @@ async function runPhase4Tests() {
       {
         reservationId: 'by_code',
         handoverCode,
-        notes: 'Verified via FoodBridge mobile code scanner',
+        notes: 'Verified via Annadhara mobile code scanner',
       },
       donorToken
     );

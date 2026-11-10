@@ -110,7 +110,7 @@ export const Register = () => {
           <HeartHandshake className="w-7 h-7" />
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[#26332D] tracking-tight">Create your Account</h2>
-        <p className="text-xs sm:text-sm text-[#718078]">Join the FoodBridge Surplus Rescue Network</p>
+        <p className="text-xs sm:text-sm text-[#718078]">Join the Annadhara Surplus Rescue Network • Team Seva Shakti</p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-xl">
@@ -125,7 +125,7 @@ export const Register = () => {
           {/* Role selector tabs */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#26332D] mb-2">
-              Select Your Role on FoodBridge
+              Select Your Role on Annadhara
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button

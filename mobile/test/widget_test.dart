@@ -7,7 +7,7 @@ import 'package:foodbridge_mobile/models/pickup_model.dart';
 import 'package:foodbridge_mobile/models/organization_model.dart';
 
 void main() {
-  group('FoodBridge Model Unit Tests', () {
+  group('Annadhara Model Unit Tests', () {
     test('UserModel deserialization and role checks', () {
       final jsonDonor = {
         '_id': 'u1',
@@ -150,8 +150,8 @@ void main() {
     });
   });
 
-  testWidgets('FoodBridge App smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const FoodBridgeApp());
-    expect(find.byType(FoodBridgeApp), findsOneWidget);
+  testWidgets('Annadhara App smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const AnnadharaApp());
+    expect(find.byType(AnnadharaApp), findsOneWidget);
   });
 }

@@ -83,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'FoodBridge',
+                'Annadhara',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
@@ -99,6 +99,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primaryGreen,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Team Seva Shakti • MERNOVA X 2026',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.secondaryText,
                 ),
               ),
               const SizedBox(height: 32),

@@ -360,6 +360,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: const Text('Sign Out'),
               ),
             ),
+            const SizedBox(height: 20),
+
+            // About / App Information Footer
+            Container(
+              padding: const EdgeInsets.all(14),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.lightGreen.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.2)),
+              ),
+              child: const Column(
+                children: [
+                  Text(
+                    'Annadhara v1.0.0',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.darkGreen),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Surplus Food. Shared Hope. Zero Waste.',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primaryGreen),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Developed by Team Seva Shakti • MERNOVA X 2026',
+                    style: TextStyle(fontSize: 10, color: AppColors.secondaryText),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

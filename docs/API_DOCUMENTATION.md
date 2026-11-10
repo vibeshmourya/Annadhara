@@ -1,5 +1,6 @@
-# FoodBridge REST API Documentation
+# Annadhara REST API Documentation
 
+**Project Title:** Annadhara | **Team:** Team Seva Shakti (MERNOVA X 2026)  
 **Tagline:** *Surplus Food. Shared Hope. Zero Waste.*  
 **Base URL:** `http://localhost:5000/api`  
 **Authentication Scheme:** Bearer JWT in `Authorization` header (`Bearer <token>`).

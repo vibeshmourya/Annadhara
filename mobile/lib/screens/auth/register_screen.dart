@@ -90,7 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Join FoodBridge Network'),
+        title: const Text('Join Annadhara Network'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

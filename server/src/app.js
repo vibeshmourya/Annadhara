@@ -55,7 +55,7 @@ app.get('/api/health', (req, res) => {
   const dbStatus = getDbStatus();
   res.status(200).json({
     success: true,
-    message: 'FoodBridge API service is active',
+    message: 'Annadhara API service is active',
     status: 'online',
     database: dbStatus,
     timestamp: new Date().toISOString(),

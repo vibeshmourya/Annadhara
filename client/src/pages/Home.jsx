@@ -52,7 +52,7 @@ export const Home = () => {
           </h1>
 
           <p className="max-w-2xl mx-auto text-base sm:text-lg text-[#718078] leading-relaxed">
-            FoodBridge empowers restaurants, canteens, and food producers to instantly donate safe, surplus meals to verified
+            Annadhara empowers restaurants, canteens, and food producers to instantly donate safe, surplus meals to verified
             NGOs, community kitchens, and shelters — supported by volunteer transport.
           </p>
 
@@ -102,7 +102,7 @@ export const Home = () => {
       <section id="how-it-works" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-[#2E7D5B]">Simple & Transparent</p>
-          <h2 className="text-3xl font-extrabold text-[#26332D]">How FoodBridge Works</h2>
+          <h2 className="text-3xl font-extrabold text-[#26332D]">How Annadhara Works</h2>
           <p className="text-sm text-[#718078]">
             Designed for clear collaboration without technical confusion or unnecessary steps.
           </p>

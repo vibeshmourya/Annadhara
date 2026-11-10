@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "foodbridge_mobile" "\0"
+            VALUE "CompanyName", "Team Seva Shakti" "\0"
+            VALUE "FileDescription", "Annadhara — Surplus Food Rescue & Donation Network" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "foodbridge_mobile" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Team Seva Shakti. All rights reserved." "\0"
             VALUE "OriginalFilename", "foodbridge_mobile.exe" "\0"
-            VALUE "ProductName", "foodbridge_mobile" "\0"
+            VALUE "ProductName", "Annadhara" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

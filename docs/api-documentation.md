@@ -1,10 +1,11 @@
-# FoodBridge REST API Documentation
+# Annadhara REST API Documentation
 
+**Project Title:** Annadhara | **Team:** Team Seva Shakti (MERNOVA X 2026)  
 **Version:** 1.0.0  
 **Base URL:**
 - Web / Desktop Development: `http://localhost:5000/api`
 - Android Emulator: `http://10.0.2.2:5000/api`
-- Production: `https://api.foodbridge.org/api`
+- Production: `https://api.annadhara.org/api`
 
 ---
 
@@ -27,7 +28,7 @@ Authorization: Bearer <your-jwt-token>
     ```json
     {
       "success": true,
-      "message": "FoodBridge API service is active",
+      "message": "Annadhara API service is active",
       "status": "online",
       "database": {
         "status": "connected",

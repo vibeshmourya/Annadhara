@@ -54,7 +54,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
               child: const Icon(Icons.volunteer_activism_rounded, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 8),
-            const Text('FoodBridge', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const Text('Annadhara', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
           ],
         ),
         actions: [
@@ -122,7 +122,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                           Text(
                             user?.organizationName != null
                                 ? '${user!.organizationName} • Zero Waste Active'
-                                : 'Surplus Food Rescue & Shared Hope',
+                                : 'Annadhara • Surplus Food. Shared Hope.',
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
                           ),
                         ],

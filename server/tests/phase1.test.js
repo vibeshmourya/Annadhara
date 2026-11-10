@@ -1,5 +1,6 @@
 /**
- * FOODBRIDGE — PHASE 1 AUTOMATED INTEGRATION TEST SUITE
+ * ANNADHARA — PHASE 1 AUTOMATED INTEGRATION TEST SUITE
+ * Developed by Team Seva Shakti (MERNOVA X 2026)
  * 
  * Tests all 14 mandatory requirements from Section 12:
  * 1. MongoDB connects successfully
@@ -59,7 +60,7 @@ function assert(condition, message) {
 
 async function runPhase1Tests() {
   console.log('================================================================');
-  console.log('🌿 FOODBRIDGE PHASE 1: BACKEND & DATABASE AUTOMATED TEST SUITE');
+  console.log('🌿 ANNADHARA PHASE 1: BACKEND & DATABASE AUTOMATED TEST SUITE');
   console.log('================================================================\n');
 
   let passedTests = 0;

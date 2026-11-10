@@ -55,7 +55,7 @@ class _ActivityScreenState extends State<ActivityScreen> with SingleTickerProvid
                 border: Border.all(color: AppColors.border),
               ),
               child: QrImageView(
-                data: 'FOODBRIDGE:${res.id}:${res.handoverCode}',
+                data: 'ANNADHARA:${res.id}:${res.handoverCode}',
                 version: QrVersions.auto,
                 size: 180,
               ),

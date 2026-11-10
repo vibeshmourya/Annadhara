@@ -13,11 +13,11 @@ export const Footer = () => {
               <div className="w-8 h-8 rounded-lg bg-[#2E7D5B] text-white flex items-center justify-center">
                 <HeartHandshake className="w-5 h-5" />
               </div>
-              <span className="text-xl font-extrabold text-[#26332D]">FoodBridge</span>
+              <span className="text-xl font-extrabold text-[#26332D]">Annadhara</span>
             </div>
             <p className="text-sm font-semibold text-[#2E7D5B]">Surplus Food. Shared Hope. Zero Waste.</p>
             <p className="text-sm text-[#718078] max-w-md leading-relaxed">
-              FoodBridge connects restaurants, canteens, and food businesses with registered charities and community
+              Annadhara connects restaurants, canteens, and food businesses with registered charities and community
               shelters to ensure wholesome surplus food nourishes people instead of ending up in landfills.
             </p>
           </div>
@@ -68,12 +68,12 @@ export const Footer = () => {
         {/* Legal Disclaimer & Safety Notice */}
         <div className="border-t border-stone-100 pt-6 text-xs text-[#718078] space-y-2">
           <p className="bg-[#F8FAF8] p-3 rounded-xl border border-stone-200/60">
-            <strong>Food Safety Notice:</strong> FoodBridge is a community coordination platform. Participating donors
+            <strong>Food Safety Notice:</strong> Annadhara is a community coordination platform. Participating donors
             and recipient organizations are responsible for complying with applicable local food handling, temperature
             control, and safety regulations. Never consume food that looks, smells, or feels compromised.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-between pt-2 text-[#718078]">
-            <p>© {new Date().getFullYear()} FoodBridge Network. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Annadhara • Developed by Team Seva Shakti (MERNOVA X 2026). All rights reserved.</p>
             <p className="text-[11px] mt-1 sm:mt-0">Built with Node.js, Express, React, Tailwind, and Flutter.</p>
           </div>
         </div>

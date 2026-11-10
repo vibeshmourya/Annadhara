@@ -22,7 +22,8 @@ const startServer = async () => {
 
     const server = app.listen(PORT, () => {
       console.log(`====================================================`);
-      console.log(`🌿 FoodBridge Backend Server running on port ${PORT}`);
+      console.log(`🌿 Annadhara Backend Server running on port ${PORT}`);
+      console.log(`🌿 Developed by Team Seva Shakti (MERNOVA X 2026)`);
       console.log(`🌿 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌿 API Health check: http://localhost:${PORT}/api/health`);
       console.log(`====================================================`);

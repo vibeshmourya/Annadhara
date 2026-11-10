@@ -1,6 +1,8 @@
-# foodbridge_mobile
+# Annadhara Mobile Application
 
-A new Flutter project.
+**Tagline:** *Surplus Food. Shared Hope. Zero Waste.*  
+**Developed by:** Team Seva Shakti (MERNOVA X 2026)  
+**Dart Package:** `foodbridge_mobile` (retained internally for import and build compatibility)
 
 ## Getting Started
 

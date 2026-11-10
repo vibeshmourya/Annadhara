@@ -26,7 +26,7 @@ async function request(path, options = {}) {
 }
 
 async function runTests() {
-  console.log('🚀 Starting FoodBridge Backend Automated Integration Tests...\n');
+  console.log('🚀 Starting Annadhara Backend Automated Integration Tests (Team Seva Shakti)...\n');
 
   try {
     server = await startServer();
@@ -264,7 +264,7 @@ async function runTests() {
     }
     console.log(`  ✅ Donor Dashboard stats verified from DB: total collected = ${donorStats.data.data.totalCollected}\n`);
 
-    console.log('🎉 ALL INTEGRATION TESTS PASSED SUCCESSFULLY! The FoodBridge shared backend is robust, atomic, and secure.\n');
+    console.log('🎉 ALL INTEGRATION TESTS PASSED SUCCESSFULLY! The Annadhara shared backend is robust, atomic, and secure.\n');
     server.close();
     process.exit(0);
   } catch (error) {

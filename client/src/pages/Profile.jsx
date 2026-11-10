@@ -237,6 +237,13 @@ export const Profile = () => {
               </div>
             )}
           </div>
+
+          {/* Platform Identity Info Card */}
+          <div className="bg-[#EAF4EE]/60 p-5 rounded-2xl border border-[#2E7D5B]/20 text-xs space-y-1.5">
+            <p className="font-extrabold text-[#205B43]">Annadhara</p>
+            <p className="text-[11px] font-semibold text-[#2E7D5B]">Surplus Food. Shared Hope. Zero Waste.</p>
+            <p className="text-[11px] text-[#718078]">Developed by Team Seva Shakti • MERNOVA X 2026</p>
+          </div>
         </div>
 
         {/* Right Column: Forms */}

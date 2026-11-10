@@ -1,12 +1,14 @@
-# FoodBridge System Architecture & Specifications
+# Annadhara System Architecture & Specifications
 
+**Project Title:** Annadhara  
+**Team:** Team Seva Shakti (MERNOVA X 2026)  
 **Tagline:** *Surplus Food. Shared Hope. Zero Waste.*
 
 ---
 
 ## 1. High-Level System Architecture
 
-FoodBridge connects donors (restaurants, bakeries, caterers, hotels, canteens) with recipient charities/NGOs and delivery volunteers. Both the React.js web application and the Flutter mobile application interact with the exact same shared backend and database:
+Annadhara connects donors (restaurants, bakeries, caterers, hotels, canteens) with recipient charities/NGOs and delivery volunteers. Both the React.js web application and the Flutter mobile application interact with the exact same shared backend and database:
 
 ```
   ┌─────────────────────────┐             ┌─────────────────────────┐
@@ -45,7 +47,7 @@ FoodBridge connects donors (restaurants, bakeries, caterers, hotels, canteens) w
 
 ## 2. Quantity Management & Zero-Waste Invariants
 
-A core architectural principle of FoodBridge is strict mathematical inventory integrity without oversubscription race conditions:
+A core architectural principle of Annadhara is strict mathematical inventory integrity without oversubscription race conditions:
 
 ### Mathematical Invariants
 Across any donation listing at all points in time:

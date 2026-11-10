@@ -54,6 +54,9 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const res = await authApi.register(userData);
+    if (!res.data?.success || !res.data?.data?.token || !res.data?.data?.user) {
+      throw new Error(res.data?.message || 'Unexpected response from registration server.');
+    }
     const { token: newToken, user: newUser } = res.data.data;
     localStorage.setItem('foodbridge_token', newToken);
     localStorage.setItem('foodbridge_user', JSON.stringify(newUser));

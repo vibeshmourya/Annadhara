@@ -1,4 +1,4 @@
-# Annadhara — Surplus Food Rescue and Donation Network
+# Annadhara - Surplus Food Rescue and Donation Network
 
 > **Tagline:** *Surplus Food. Shared Hope. Zero Waste.*  
 > **Project Title:** Annadhara | **Team:** Team Seva Shakti | **Event:** MERNOVA X 2026

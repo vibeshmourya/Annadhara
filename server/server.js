@@ -7,7 +7,7 @@ const { seedDatabase } = require('./src/utils/seedData');
 const PORT = process.env.PORT || 5000;
 
 // Connect to Database and start server
-const startServer = async () => {
+const startServer = async (customPort = null) => {
   try {
     await connectDB();
 
@@ -20,16 +20,23 @@ const startServer = async () => {
       }
     }
 
-    const server = app.listen(PORT, () => {
-      console.log(`====================================================`);
-      console.log(`🌿 Annadhara Backend Server running on port ${PORT}`);
-      console.log(`🌿 Developed by Team Seva Shakti (MERNOVA X 2026)`);
-      console.log(`🌿 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌿 API Health check: http://localhost:${PORT}/api/health`);
-      console.log(`====================================================`);
-    });
+    const listenPort = customPort !== null 
+      ? customPort 
+      : (process.env.NODE_ENV === 'test' ? 0 : PORT);
 
-    return server;
+    return new Promise((resolve, reject) => {
+      const server = app.listen(listenPort, () => {
+        const actualPort = server.address().port;
+        console.log(`====================================================`);
+        console.log(`🌿 Annadhara Backend Server running on port ${actualPort}`);
+        console.log(`🌿 Developed by Team Seva Shakti (MERNOVA X 2026)`);
+        console.log(`🌿 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🌿 API Health check: http://localhost:${actualPort}/api/health`);
+        console.log(`====================================================`);
+        resolve(server);
+      });
+      server.on('error', reject);
+    });
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

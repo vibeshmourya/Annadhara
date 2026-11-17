@@ -24,11 +24,17 @@ const createDonation = async (req, res, next) => {
       pickupEndTime,
       imageUrl,
       safetyGuidelinesAccepted,
+      dietaryType,
+      fssaiNumber,
+      fssaiDeclaration,
     } = req.body;
 
     const donation = new Donation({
       title,
       category,
+      dietaryType: dietaryType || 'Vegetarian',
+      fssaiNumber: fssaiNumber ? String(fssaiNumber).trim() : '',
+      fssaiDeclaration: Boolean(fssaiDeclaration),
       description,
       totalQuantity,
       availableQuantity: totalQuantity, // initially all is available

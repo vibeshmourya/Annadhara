@@ -11,13 +11,15 @@ import {
   CheckCircle2,
   Share2,
   Flag,
+  Info,
 } from 'lucide-react';
 import { donationApi } from '../api/endpoints';
-import { StatusBadge, CategoryBadge } from '../components/common/Badge';
+import { StatusBadge, CategoryBadge, DietaryBadge, FSSAIBadge } from '../components/common/Badge';
 import { ReservationModal } from '../components/donations/ReservationModal';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/StatCard';
 import { useAuth } from '../context/AuthContext';
+import { formatIndianDate, FOOD_SAFETY_DISCLAIMER } from '../constants/india';
 
 export const DonationDetails = () => {
   const { id } = useParams();
@@ -88,6 +90,18 @@ export const DonationDetails = () => {
 
   const isExpired = new Date(donation.pickupEndTime) <= new Date();
 
+  const addr = donation.pickupLocation?.address || {};
+  const formattedAddress = [
+    addr.street,
+    addr.areaLocality,
+    addr.city,
+    addr.district,
+    addr.state ? `${addr.state} - ${addr.postalCode || ''}` : addr.postalCode,
+    addr.country || 'India',
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Back button */}
@@ -113,16 +127,20 @@ export const DonationDetails = () => {
                 e.target.src = defaultImage;
               }}
             />
-            <div className="absolute top-4 left-4 flex gap-2">
+            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
               <StatusBadge status={isExpired ? 'expired' : donation.status} />
+              {donation.dietaryType && <DietaryBadge dietaryType={donation.dietaryType} />}
             </div>
           </div>
 
           {/* Info Pane */}
           <div className="p-6 sm:p-8 flex flex-col justify-between space-y-6">
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <CategoryBadge category={donation.category} />
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CategoryBadge category={donation.category} />
+                  {donation.fssaiNumber && <FSSAIBadge number={donation.fssaiNumber} />}
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsReportModalOpen(true)}
@@ -152,31 +170,26 @@ export const DonationDetails = () => {
               </div>
             </div>
 
-            {/* Timings and Location */}
+            {/* Timings and Indian Address */}
             <div className="space-y-3 text-xs border-t border-stone-100 pt-4">
               <div className="flex items-center space-x-2 text-[#718078]">
                 <Clock className="w-4 h-4 text-[#2E7D5B] shrink-0" />
                 <span>
                   Pickup Deadline:{' '}
                   <strong className="text-[#26332D]">
-                    {new Date(donation.pickupEndTime).toLocaleDateString([], {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatIndianDate(donation.pickupEndTime)}
                   </strong>
                 </span>
               </div>
 
-              <div className="flex items-center space-x-2 text-[#718078]">
-                <MapPin className="w-4 h-4 text-[#2E7D5B] shrink-0" />
-                <span>
-                  Location:{' '}
-                  <strong className="text-[#26332D]">
-                    {donation.pickupLocation?.address?.street}, {donation.pickupLocation?.address?.city}
+              <div className="flex items-start space-x-2 text-[#718078]">
+                <MapPin className="w-4 h-4 text-[#2E7D5B] shrink-0 mt-0.5" />
+                <div>
+                  <span className="block text-[11px] font-bold text-[#718078]">Pickup Location:</span>
+                  <strong className="text-[#26332D] leading-tight block">
+                    {formattedAddress || 'Bengaluru, Karnataka, India'}
                   </strong>
-                </span>
+                </div>
               </div>
 
               <div className="flex items-center space-x-2 text-[#718078]">
@@ -184,7 +197,7 @@ export const DonationDetails = () => {
                 <span>
                   Donor:{' '}
                   <strong className="text-[#26332D]">
-                    {donation.organization?.name || donation.donor?.name}
+                    {donation.organization?.name || donation.donor?.name || 'Verified Indian Food Donor'}
                   </strong>
                 </span>
               </div>
@@ -210,7 +223,7 @@ export const DonationDetails = () => {
                   </Link>
                 ) : (
                   <p className="text-center text-xs text-[#718078] bg-[#F8FAF8] p-2.5 rounded-xl border border-stone-200/60">
-                    Logged in as {user?.role}. Food reservations are reserved for registered Recipient NGOs.
+                    Logged in as {user?.role}. Food reservations are reserved for registered Recipient NGOs & Shelters.
                   </p>
                 )
               ) : (
@@ -228,7 +241,7 @@ export const DonationDetails = () => {
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-xs space-y-2">
           <div className="flex items-center space-x-2 text-xs font-bold text-[#205B43]">
             <ShieldCheck className="w-4 h-4 text-[#2E7D5B]" />
-            <span>Storage & Handling</span>
+            <span>Storage & Temperature</span>
           </div>
           <p className="text-sm font-extrabold text-[#26332D] capitalize">
             {donation.storageHandling?.replace('_', ' ')}
@@ -259,17 +272,21 @@ export const DonationDetails = () => {
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-xs space-y-2">
           <div className="flex items-center space-x-2 text-xs font-bold text-[#205B43]">
             <Calendar className="w-4 h-4 text-[#2E7D5B]" />
-            <span>Preparation Date</span>
+            <span>Preparation Date & Time</span>
           </div>
           <p className="text-sm font-extrabold text-[#26332D]">
-            {new Date(donation.prepDateTime).toLocaleDateString([], {
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
+            {formatIndianDate(donation.prepDateTime)}
           </p>
-          <p className="text-[11px] text-[#718078]">Prepared fresh and verified under safety declaration.</p>
+          <p className="text-[11px] text-[#718078]">Prepared fresh under food safety hygiene guidelines.</p>
+        </div>
+      </div>
+
+      {/* FSSAI Food Safety Advisory Box */}
+      <div className="p-4 rounded-2xl bg-[#EAF4EE]/70 border border-[#2E7D5B]/20 flex items-start space-x-3 text-xs text-[#205B43]">
+        <Info className="w-5 h-5 text-[#2E7D5B] shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold">Indian Food Safety & Hygiene Advisory: </span>
+          {FOOD_SAFETY_DISCLAIMER}
         </div>
       </div>
 
@@ -344,4 +361,3 @@ export const DonationDetails = () => {
     </div>
   );
 };
-

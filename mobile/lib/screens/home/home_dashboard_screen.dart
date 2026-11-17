@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/constants/india_constants.dart';
 import '../../core/network/api_service.dart';
 import '../../providers/auth_provider.dart';
 import '../donor/create_donation_screen.dart';
@@ -60,6 +61,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Stats',
             onPressed: _fetchStats,
           ),
         ],
@@ -110,7 +112,13 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                   style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
                                 ),
                               ),
-                              const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
+                              const Row(
+                                children: [
+                                  Text('🇮🇳 India', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  SizedBox(width: 4),
+                                  Icon(Icons.eco_rounded, color: Colors.white, size: 18),
+                                ],
+                              ),
                             ],
                           ),
                           const SizedBox(height: 12),
@@ -122,13 +130,37 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                           Text(
                             user?.organizationName != null
                                 ? '${user!.organizationName} • Zero Waste Active'
-                                : 'Annadhara • Surplus Food. Shared Hope.',
+                                : 'Annadhara • Surplus Food. Shared Hope. Zero Waste.',
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+
+                    // Food Safety & FSSAI Advisory container
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightGreen,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.shield_outlined, color: AppColors.primaryGreen, size: 16),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              IndiaConstants.foodSafetyDisclaimer,
+                              style: TextStyle(fontSize: 10.5, color: AppColors.darkGreen, height: 1.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     // Quick Actions
                     if (user?.isDonor == true) ...[
@@ -150,70 +182,94 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                     ],
 
                     const Text(
-                      'Platform Activity & Metrics',
+                      'Live Metrics & Impact',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryText),
                     ),
                     const SizedBox(height: 12),
 
-                    // Grid metrics depending on role
+                    // Role-specific metrics matching Section 8
                     if (_stats != null) ...[
                       if (user?.isDonor == true) ...[
                         Row(
                           children: [
-                            _statBox('Published', '${_stats!['totalDonations'] ?? 0}', Icons.inventory_2_outlined),
+                            _statBox('Active Donations', '${_stats!['activeDonations'] ?? 0}', Icons.schedule, highlight: true),
                             const SizedBox(width: 12),
-                            _statBox('Active', '${_stats!['activeDonations'] ?? 0}', Icons.schedule, highlight: true),
+                            _statBox('Pending Requests', '${_stats!['pendingRequests'] ?? 0}', Icons.notifications_active_outlined),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            _statBox('Pending Requests', '${_stats!['pendingRequests'] ?? 0}', Icons.notifications_active_outlined),
+                            _statBox('Approved Reservations', '${_stats!['approvedReservations'] ?? _stats!['pendingRequests'] ?? 0}', Icons.event_available),
                             const SizedBox(width: 12),
-                            _statBox('Food Rescued', '${_stats!['totalCollected'] ?? 0} units', Icons.volunteer_activism),
+                            _statBox('Completed Donations', '${_stats!['totalCollected'] ?? _stats!['completedDonations'] ?? 0} units', Icons.task_alt),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _statBox('Total Published', '${_stats!['totalDonations'] ?? 0}', Icons.inventory_2_outlined),
                           ],
                         ),
                       ] else if (user?.isRecipient == true) ...[
                         Row(
                           children: [
-                            _statBox('Community Surplus', '${_stats!['availableFoodCount'] ?? 0}', Icons.restaurant),
+                            _statBox('Available Food', '${_stats!['availableFoodCount'] ?? 0}', Icons.restaurant, highlight: true),
                             const SizedBox(width: 12),
-                            _statBox('My Reservations', '${_stats!['activeReservations'] ?? 0}', Icons.check_circle_outline, highlight: true),
+                            _statBox('My Reservations', '${_stats!['activeReservations'] ?? 0}', Icons.bookmark_border),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            _statBox('Upcoming Pickups', '${_stats!['upcomingPickups'] ?? 0}', Icons.delivery_dining),
+                            _statBox('Approved Requests', '${_stats!['approvedRequests'] ?? _stats!['activeReservations'] ?? 0}', Icons.check_circle_outline),
                             const SizedBox(width: 12),
-                            _statBox('Meals Received', '${_stats!['totalMealsReceived'] ?? 0}', Icons.favorite_border),
+                            _statBox('Upcoming Pickups', '${_stats!['upcomingPickups'] ?? 0}', Icons.delivery_dining),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _statBox('Completed Collections', '${_stats!['totalMealsReceived'] ?? 0} units', Icons.favorite_border),
                           ],
                         ),
                       ] else if (user?.isVolunteer == true) ...[
                         Row(
                           children: [
-                            _statBox('Active Pickups', '${_stats!['assignedPickups'] ?? 0}', Icons.delivery_dining, highlight: true),
+                            _statBox('Available Tasks', '${_stats!['pendingTasks'] ?? 0}', Icons.list_alt, highlight: true),
                             const SizedBox(width: 12),
-                            _statBox('Available Tasks', '${_stats!['pendingTasks'] ?? 0}', Icons.list_alt),
+                            _statBox('Assigned Pickups', '${_stats!['assignedPickups'] ?? 0}', Icons.delivery_dining),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        _statBox('Completed Deliveries', '${_stats!['completedPickups'] ?? 0}', Icons.task_alt),
+                        Row(
+                          children: [
+                            _statBox('In-Transit Deliveries', '${_stats!['inTransitPickups'] ?? (_stats!['assignedPickups'] != null && _stats!['assignedPickups'] > 0 ? 1 : 0)}', Icons.navigation_outlined),
+                            const SizedBox(width: 12),
+                            _statBox('Completed Deliveries', '${_stats!['completedPickups'] ?? 0}', Icons.task_alt),
+                          ],
+                        ),
                       ] else ...[
                         // Admin
                         Row(
                           children: [
                             _statBox('Total Users', '${_stats!['totalUsers'] ?? 0}', Icons.people),
                             const SizedBox(width: 12),
-                            _statBox('Organizations', '${_stats!['registeredOrganizations'] ?? 0}', Icons.business),
+                            _statBox('Pending Verification', '${_stats!['pendingVerifications'] ?? 0}', Icons.verified_user, highlight: true),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            _statBox('Pending Reviews', '${_stats!['pendingVerifications'] ?? 0}', Icons.verified_user, highlight: true),
+                            _statBox('Active Donations', '${_stats!['activeDonations'] ?? _stats!['totalDonations'] ?? 0}', Icons.inventory_2_outlined),
                             const SizedBox(width: 12),
-                            _statBox('Handovers Done', '${_stats!['completedHandovers'] ?? 0}', Icons.done_all),
+                            _statBox('Reservations', '${_stats!['totalReservations'] ?? 0}', Icons.calendar_today_outlined),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _statBox('Completed Handovers', '${_stats!['completedHandovers'] ?? 0}', Icons.done_all),
                           ],
                         ),
                       ],
@@ -240,7 +296,13 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.secondaryText)),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.secondaryText),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 Icon(icon, size: 18, color: highlight ? AppColors.primaryGreen : AppColors.secondaryText),
               ],
             ),

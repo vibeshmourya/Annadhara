@@ -65,16 +65,14 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Legal Disclaimer & Safety Notice */}
+        {/* Legal Disclaimer & Indian Food Safety Notice */}
         <div className="border-t border-stone-100 pt-6 text-xs text-[#718078] space-y-2">
-          <p className="bg-[#F8FAF8] p-3 rounded-xl border border-stone-200/60">
-            <strong>Food Safety Notice:</strong> Annadhara is a community coordination platform. Participating donors
-            and recipient organizations are responsible for complying with applicable local food handling, temperature
-            control, and safety regulations. Never consume food that looks, smells, or feels compromised.
+          <p className="bg-[#EAF4EE]/70 p-3.5 rounded-xl border border-[#2E7D5B]/20 text-[#205B43] leading-relaxed">
+            <strong>🇮🇳 Food Safety & FSSAI Advisory:</strong> In accordance with Indian food safety standards (FSSAI guidelines for surplus food donation), donors must ensure surplus food was prepared hygienically, stored at safe temperatures, and is fit for human consumption before handover. Annadhara is a surplus food rescue network that coordinates discovery and logistics, and does not directly inspect or certify food safety.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-between pt-2 text-[#718078]">
             <p>© {new Date().getFullYear()} Annadhara • Developed by Team Seva Shakti (MERNOVA X 2026). All rights reserved.</p>
-            <p className="text-[11px] mt-1 sm:mt-0">Built with Node.js, Express, React, Tailwind, and Flutter.</p>
+            <p className="text-[11px] mt-1 sm:mt-0">Surplus Food. Shared Hope. Zero Waste. • India</p>
           </div>
         </div>
       </div>

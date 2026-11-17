@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
+import '../../core/constants/india_constants.dart';
 import '../../models/donation_model.dart';
 import '../../providers/donation_provider.dart';
 import 'donation_detail_screen.dart';
@@ -16,18 +17,18 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
   String _selectedCategory = 'all';
   final _searchController = TextEditingController();
 
-  final List<Map<String, String>> _categories = const [
-    {'label': 'All Food', 'value': 'all'},
-    {'label': '🍲 Cooked Meals', 'value': 'cooked_meals'},
-    {'label': '🥖 Bakery', 'value': 'bakery_grains'},
-    {'label': '🥦 Produce', 'value': 'produce_fresh'},
-    {'label': '📦 Groceries', 'value': 'packaged_groceries'},
-    {'label': '🥛 Dairy', 'value': 'dairy'},
-  ];
+  late final List<Map<String, String>> _categories;
 
   @override
   void initState() {
     super.initState();
+    _categories = [
+      {'label': 'All Food', 'value': 'all'},
+      ...IndiaConstants.foodCategories.map((c) => {
+        'label': '${c['icon']} ${c['label']}',
+        'value': c['id']!,
+      }),
+    ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -46,13 +47,45 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
     super.dispose();
   }
 
+  Widget _buildDietaryBadge(String dietaryType) {
+    String label = 'Veg';
+    Color color = const Color(0xFF2E7D5B);
+    Color bg = const Color(0xFFEAF4EE);
+    String icon = '🟢';
+
+    if (dietaryType == 'non_veg' || dietaryType == 'non-veg') {
+      label = 'Non-Veg';
+      color = const Color(0xFFD9534F);
+      bg = const Color(0xFFFDE8E8);
+      icon = '🔴';
+    } else if (dietaryType == 'vegan') {
+      label = 'Vegan';
+      color = const Color(0xFF205B43);
+      bg = const Color(0xFFEAF4EE);
+      icon = '🌱';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        '$icon $label',
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final donProvider = Provider.of<DonationProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Find Available Food'),
+        title: const Text('Find Surplus Food (India)'),
       ),
       body: Column(
         children: [
@@ -67,7 +100,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                   controller: _searchController,
                   onChanged: (_) => _loadData(),
                   decoration: InputDecoration(
-                    hintText: 'Search food or city...',
+                    hintText: 'Search food, city or locality...',
                     prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.secondaryText),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -132,7 +165,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                             const SizedBox(height: 8),
                             const Text('No surplus food found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryText)),
                             const SizedBox(height: 4),
-                            const Text('Try changing search or category filter', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
+                            const Text('Try changing search query or category filter', style: TextStyle(fontSize: 12, color: AppColors.secondaryText)),
                           ],
                         ),
                       )
@@ -233,9 +266,15 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        item.category.replaceAll('_', ' ').toUpperCase(),
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                      Row(
+                        children: [
+                          _buildDietaryBadge(item.dietaryType),
+                          const SizedBox(width: 6),
+                          Text(
+                            item.category.replaceAll('_', ' ').toUpperCase(),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                          ),
+                        ],
                       ),
                       Text(
                         '${item.availableQuantity} ${item.unit} available',
@@ -271,7 +310,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                       const Icon(Icons.location_on_outlined, size: 14, color: AppColors.secondaryText),
                       const SizedBox(width: 2),
                       Text(
-                        item.city,
+                        item.areaLocality.isNotEmpty ? '${item.areaLocality}, ${item.city}' : item.city,
                         style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
                       ),
                     ],

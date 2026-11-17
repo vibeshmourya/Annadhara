@@ -6,7 +6,7 @@
  * 1. MongoDB connects successfully
  * 2. Health endpoint works (GET /api/health)
  * 3. User registration works (POST /api/auth/register)
- * 4. Duplicate email is rejected (HTTP 400)
+ * 4. Duplicate email is rejected (HTTP 409)
  * 5. Passwords are saved as bcrypt hash and never returned in API responses
  * 6. Login works with valid credentials (POST /api/auth/login)
  * 7. Invalid login is rejected (HTTP 401)
@@ -66,8 +66,8 @@ async function runPhase1Tests() {
   let passedTests = 0;
 
   try {
-    // Start backend server (connects to DB)
-    server = await startServer();
+    // Start backend server on ephemeral port (connects to DB)
+    server = await startServer(0);
     const port = server.address().port;
     baseUrl = `http://127.0.0.1:${port}`;
     console.log(`📡 Test server running at ${baseUrl}\n`);
@@ -135,10 +135,10 @@ async function runPhase1Tests() {
       },
     });
 
-    assert(dupRes.status === 400, `Expected 400 Bad Request for duplicate email, got ${dupRes.status}`);
+    assert(dupRes.status === 409, `Expected 409 Conflict for duplicate email, got ${dupRes.status}`);
     assert(dupRes.data.success === false, 'Expected success: false for duplicate registration');
     assert(dupRes.data.message.includes('already exists'), `Expected error message about duplicate email, got: ${dupRes.data.message}`);
-    console.log(`  ✅ PASSED: Duplicate registration correctly rejected with 400 Bad Request: "${dupRes.data.message}"\n`);
+    console.log(`  ✅ PASSED: Duplicate registration correctly rejected with 409 Conflict: "${dupRes.data.message}"\n`);
     passedTests++;
 
     // -------------------------------------------------------------

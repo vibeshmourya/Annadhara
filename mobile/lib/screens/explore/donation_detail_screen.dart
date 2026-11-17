@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../core/constants/colors.dart';
+import '../../core/constants/india_constants.dart';
 import '../../models/donation_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/activity_provider.dart';
@@ -72,7 +72,7 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
                 controller: _notesController,
                 decoration: const InputDecoration(
                   labelText: 'Request Notes (Optional)',
-                  hintText: 'e.g. For our evening community meal distribution...',
+                  hintText: 'e.g. For our evening shelter distribution in Indiranagar...',
                 ),
               ),
               const SizedBox(height: 20),
@@ -128,11 +128,55 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
     }
   }
 
+  Widget _buildDietaryBadge(String dietaryType) {
+    String label = 'Vegetarian';
+    Color color = const Color(0xFF2E7D5B);
+    Color bg = const Color(0xFFEAF4EE);
+    String icon = '🟢';
+
+    if (dietaryType == 'non_veg' || dietaryType == 'non-veg') {
+      label = 'Non-Vegetarian';
+      color = const Color(0xFFD9534F);
+      bg = const Color(0xFFFDE8E8);
+      icon = '🔴';
+    } else if (dietaryType == 'vegan') {
+      label = 'Vegan';
+      color = const Color(0xFF205B43);
+      bg = const Color(0xFFEAF4EE);
+      icon = '🌱';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        '$icon $label',
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  String _formatFullAddress(DonationModel d) {
+    final parts = [
+      if (d.street.isNotEmpty) d.street,
+      if (d.areaLocality.isNotEmpty) d.areaLocality,
+      if (d.city.isNotEmpty) d.city,
+      if (d.district.isNotEmpty && d.district != d.city) d.district,
+      if (d.state.isNotEmpty) d.state,
+      if (d.postalCode.isNotEmpty) 'PIN: ${d.postalCode}',
+      'India',
+    ];
+    return parts.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final don = widget.donation;
-    final dateFormat = DateFormat('MMM d, h:mm a');
 
     return Scaffold(
       appBar: AppBar(
@@ -161,16 +205,22 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightGreen,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          don.category.replaceAll('_', ' ').toUpperCase(),
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
-                        ),
+                      Row(
+                        children: [
+                          _buildDietaryBadge(don.dietaryType),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightGreen,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              don.category.replaceAll('_', ' ').toUpperCase(),
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                            ),
+                          ),
+                        ],
                       ),
                       Text(
                         '${don.availableQuantity} ${don.unit} available',
@@ -195,12 +245,38 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
                   // Detail rows
                   _infoCard([
                     _infoRow(Icons.business_outlined, 'Donor', don.organizationName ?? don.donorName),
-                    _infoRow(Icons.location_on_outlined, 'Pickup Location', '${don.street}, ${don.city}'),
-                    _infoRow(Icons.schedule, 'Pickup Deadline', dateFormat.format(don.pickupEndTime)),
+                    _infoRow(Icons.location_on_outlined, 'Pickup Location', _formatFullAddress(don)),
+                    _infoRow(Icons.schedule, 'Pickup Window', '${IndiaConstants.formatIndianDate(don.pickupStartTime)} – ${IndiaConstants.formatIndianDate(don.pickupEndTime)}'),
                     _infoRow(Icons.thermostat_outlined, 'Storage Condition', don.storageHandling.replaceAll('_', ' ').toUpperCase()),
                     if (don.allergens.isNotEmpty)
                       _infoRow(Icons.warning_amber_rounded, 'Allergens', don.allergens.join(', ')),
+                    if (don.fssaiNumber != null && don.fssaiNumber!.isNotEmpty)
+                      _infoRow(Icons.verified_outlined, 'FSSAI License', don.fssaiNumber!),
                   ]),
+                  const SizedBox(height: 16),
+
+                  // Food safety disclaimer card
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightGreen,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.shield_outlined, color: AppColors.primaryGreen, size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            IndiaConstants.foodSafetyDisclaimer,
+                            style: TextStyle(fontSize: 11, color: AppColors.darkGreen, height: 1.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   const SizedBox(height: 28),
 

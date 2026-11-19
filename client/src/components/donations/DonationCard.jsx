@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, MapPin, Building, ArrowRight } from 'lucide-react';
 import { StatusBadge, CategoryBadge, DietaryBadge, FSSAIBadge } from '../common/Badge';
-import { formatIndianDate } from '../../constants/india';
+import { formatIndianDate, resolveImageUrl, DEFAULT_FOOD_IMAGE } from '../../constants/india';
 
 export const DonationCard = ({ donation, onReserveClick }) => {
   const {
@@ -30,9 +30,6 @@ export const DonationCard = ({ donation, onReserveClick }) => {
   const isUrgent = diffHours <= 4 && diffHours > 0;
   const isExpired = deadline <= now;
 
-  const defaultImage =
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
-
   const locationDisplay =
     pickupLocation?.address?.areaLocality && pickupLocation?.address?.city
       ? `${pickupLocation.address.areaLocality}, ${pickupLocation.address.city}`
@@ -43,11 +40,11 @@ export const DonationCard = ({ donation, onReserveClick }) => {
       {/* Food Image & Top Badges */}
       <div className="relative h-48 w-full bg-stone-100 overflow-hidden">
         <img
-          src={imageUrl || defaultImage}
+          src={resolveImageUrl(imageUrl)}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
-            e.target.src = defaultImage;
+            e.target.src = DEFAULT_FOOD_IMAGE;
           }}
         />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">

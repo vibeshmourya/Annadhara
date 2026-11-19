@@ -114,13 +114,15 @@ class IndiaConstants {
   // Metric Units
   static const List<String> measurementUnits = [
     'meals',
-    'portions',
+    'plates',
+    'packs',
+    'boxes',
     'kg',
     'g',
     'litres',
     'ml',
-    'boxes',
-    'packs',
+    'pieces',
+    'portions',
   ];
 
   // Validates Indian phone numbers (10 digits starting with 6-9, or with +91)

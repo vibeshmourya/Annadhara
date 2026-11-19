@@ -125,13 +125,15 @@ export const DIETARY_TYPES = [
 // Measurement Units (Metric & Portions)
 export const FOOD_UNITS = [
   { id: 'meals', label: 'Meals' },
-  { id: 'portions', label: 'Portions' },
+  { id: 'plates', label: 'Plates' },
+  { id: 'packs', label: 'Packs / Packets' },
+  { id: 'boxes', label: 'Boxes' },
   { id: 'kg', label: 'kg (Kilograms)' },
   { id: 'g', label: 'g (Grams)' },
   { id: 'litres', label: 'Litres' },
   { id: 'ml', label: 'ml (Millilitres)' },
-  { id: 'boxes', label: 'Boxes' },
-  { id: 'packs', label: 'Packs' },
+  { id: 'pieces', label: 'Pieces / Count' },
+  { id: 'portions', label: 'Portions' },
 ];
 
 // Currency Formatter (INR - ₹) with Indian Comma System (e.g. ₹1,50,000)
@@ -211,4 +213,20 @@ export const isValidPINCode = (pin) => {
 // Food Safety Disclaimer in compliance with FSSAI Surplus Food Guidelines
 export const FOOD_SAFETY_DISCLAIMER =
   'In accordance with FSSAI surplus food regulations, all food donations must be hygienically prepared, temperature-controlled, and fit for human consumption before handover. Annadhara coordinates logistics and does not independently inspect or certify food safety.';
+
+export const DEFAULT_FOOD_IMAGE =
+  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+
+export const resolveImageUrl = (url) => {
+  if (!url || typeof url !== 'string' || !url.trim()) return DEFAULT_FOOD_IMAGE;
+  const trimmed = url.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('data:image/')) return trimmed;
+  const apiBase = import.meta.env?.VITE_API_BASE_URL || '';
+  if (apiBase && (apiBase.startsWith('http://') || apiBase.startsWith('https://'))) {
+    const origin = apiBase.replace(/\/api\/?$/, '');
+    return `${origin}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+  }
+  return trimmed;
+};
 

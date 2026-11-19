@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/india_constants.dart';
 import '../../models/donation_model.dart';
@@ -191,9 +192,10 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
               height: 200,
               decoration: BoxDecoration(
                 color: AppColors.lightGreen,
-                image: don.imageUrl.isNotEmpty
-                    ? DecorationImage(image: NetworkImage(don.imageUrl), fit: BoxFit.cover)
-                    : null,
+                image: DecorationImage(
+                  image: NetworkImage(ApiConstants.resolveImageUrl(don.imageUrl)),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
 

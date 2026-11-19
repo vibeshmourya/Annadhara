@@ -83,21 +83,34 @@ const donationSchema = new mongoose.Schema(
     unit: {
       type: String,
       required: [true, 'Unit of measurement is required'],
-      enum: ['meals', 'portions', 'kg', 'g', 'litres', 'liters', 'ml', 'boxes', 'packs'],
+      enum: [
+        'meals',
+        'portions',
+        'plates',
+        'packs',
+        'packets',
+        'boxes',
+        'kg',
+        'g',
+        'litres',
+        'liters',
+        'ml',
+        'pieces',
+        'pcs',
+      ],
     },
     prepDateTime: {
       type: Date,
-      required: [true, 'Preparation date and time is required'],
+      default: Date.now,
     },
     expiryDateTime: {
       type: Date,
-      required: [true, 'Food consumption / expiry deadline is required'],
       index: true,
     },
     storageHandling: {
       type: String,
       required: [true, 'Storage and handling information is required'],
-      enum: ['room_temperature', 'refrigerated', 'frozen', 'hot_held'],
+      enum: ['room_temperature', 'refrigerated', 'frozen', 'hot_held', 'other'],
       default: 'room_temperature',
     },
     allergens: {

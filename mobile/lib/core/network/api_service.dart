@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../storage/storage_service.dart';
@@ -92,6 +93,36 @@ class ApiService {
         uri,
         headers: await _headers(),
       );
+      return _parseResponse(response);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+    }
+  }
+
+  static Future<ApiResponse> uploadImage(File file) async {
+    try {
+      final token = await StorageService.getToken();
+      final uri = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.uploadImage}');
+      final request = http.MultipartRequest('POST', uri);
+
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      final stream = http.ByteStream(file.openRead());
+      final length = await file.length();
+      final filename = file.path.split(Platform.pathSeparator).last;
+
+      final multipartFile = http.MultipartFile(
+        'image',
+        stream,
+        length,
+        filename: filename,
+      );
+      request.files.add(multipartFile);
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
       return _parseResponse(response);
     } catch (e) {
       return ApiResponse(success: false, message: e.toString(), statusCode: 500);

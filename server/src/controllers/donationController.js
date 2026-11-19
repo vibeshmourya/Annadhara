@@ -2,6 +2,7 @@ const Donation = require('../models/Donation');
 const User = require('../models/User');
 const { rankDonationsForRecipient } = require('../services/donationService');
 const { logAudit } = require('../services/auditService');
+const { normalizeDietaryType } = require('../utils/validationHelpers');
 
 /**
  * Create a new surplus food donation
@@ -29,10 +30,32 @@ const createDonation = async (req, res, next) => {
       fssaiDeclaration,
     } = req.body;
 
+    const normalizedLocation = {
+      address: {
+        street: pickupLocation?.address?.street || '',
+        areaLocality: pickupLocation?.address?.areaLocality || '',
+        city: pickupLocation?.address?.city || '',
+        district: pickupLocation?.address?.district || '',
+        state: pickupLocation?.address?.state || '',
+        postalCode: pickupLocation?.address?.postalCode || '',
+        country: pickupLocation?.address?.country || 'India',
+      },
+      location: {
+        type: 'Point',
+        coordinates:
+          Array.isArray(pickupLocation?.location?.coordinates) &&
+          pickupLocation.location.coordinates.length === 2 &&
+          !isNaN(pickupLocation.location.coordinates[0]) &&
+          !isNaN(pickupLocation.location.coordinates[1])
+            ? [Number(pickupLocation.location.coordinates[0]), Number(pickupLocation.location.coordinates[1])]
+            : [77.5946, 12.9716],
+      },
+    };
+
     const donation = new Donation({
       title,
       category,
-      dietaryType: dietaryType || 'Vegetarian',
+      dietaryType: normalizeDietaryType(dietaryType),
       fssaiNumber: fssaiNumber ? String(fssaiNumber).trim() : '',
       fssaiDeclaration: Boolean(fssaiDeclaration),
       description,
@@ -41,11 +64,11 @@ const createDonation = async (req, res, next) => {
       reservedQuantity: 0,
       collectedQuantity: 0,
       unit,
-      prepDateTime,
-      expiryDateTime,
-      storageHandling,
+      prepDateTime: prepDateTime ? new Date(prepDateTime) : new Date(),
+      expiryDateTime: expiryDateTime ? new Date(expiryDateTime) : (pickupEndTime ? new Date(pickupEndTime) : undefined),
+      storageHandling: storageHandling || 'room_temperature',
       allergens: allergens || [],
-      pickupLocation,
+      pickupLocation: normalizedLocation,
       pickupStartTime,
       pickupEndTime,
       imageUrl: imageUrl || '',

@@ -224,12 +224,83 @@ const normalizeAddress = (address = {}, fallbackSource = {}) => {
   };
 };
 
+const CANONICAL_FOOD_CATEGORIES = [
+  'rice_meals',
+  'roti_chapati',
+  'idli_dosa',
+  'biryani',
+  'snacks',
+  'bakery_items',
+  'fruits',
+  'vegetables',
+  'packaged_food',
+  'groceries',
+  'dairy_products',
+  'other',
+];
+
+const LEGACY_FOOD_CATEGORIES = [
+  'cooked_meals',
+  'bakery_grains',
+  'produce_fresh',
+  'packaged_groceries',
+  'dairy',
+  'beverages',
+  'prepared_catering',
+];
+
+const ALL_FOOD_CATEGORIES = [...CANONICAL_FOOD_CATEGORIES, ...LEGACY_FOOD_CATEGORIES];
+
+const DIETARY_TYPES = ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Other'];
+
+const normalizeDietaryType = (val) => {
+  if (!val || typeof val !== 'string') return 'Vegetarian';
+  const trimmed = val.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === 'vegetarian' || lower === 'veg') return 'Vegetarian';
+  if (lower === 'non-vegetarian' || lower === 'non_veg' || lower === 'non-veg') return 'Non-Vegetarian';
+  if (lower === 'vegan') return 'Vegan';
+  if (DIETARY_TYPES.includes(trimmed)) return trimmed;
+  return 'Vegetarian';
+};
+
+const QUANTITY_UNITS = [
+  'meals',
+  'portions',
+  'plates',
+  'packs',
+  'packets',
+  'boxes',
+  'kg',
+  'g',
+  'litres',
+  'liters',
+  'ml',
+  'pieces',
+  'pcs',
+];
+
+const STORAGE_CONDITIONS = [
+  'room_temperature',
+  'refrigerated',
+  'frozen',
+  'hot_held',
+  'other',
+];
+
 module.exports = {
   INDIAN_STATES,
   DONOR_ORGANIZATION_TYPES,
   RECIPIENT_ORGANIZATION_TYPES,
   VOLUNTEER_TYPES,
   ORGANIZATION_TYPES,
+  CANONICAL_FOOD_CATEGORIES,
+  LEGACY_FOOD_CATEGORIES,
+  ALL_FOOD_CATEGORIES,
+  DIETARY_TYPES,
+  normalizeDietaryType,
+  QUANTITY_UNITS,
+  STORAGE_CONDITIONS,
   normalizeRole,
   normalizeOrgType,
   isValidPhone,

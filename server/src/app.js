@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -17,11 +18,16 @@ const pickupRoutes = require('./routes/pickupRoutes');
 const handoverRoutes = require('./routes/handoverRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 
-// Security and utility middleware
-app.use(helmet());
+// Security and utility middleware (allowing cross-origin for static uploads)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // CORS configuration for React web & Flutter mobile / desktop clients
 const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:5173'];
@@ -62,6 +68,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Static file serving for uploads (images)
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -73,6 +82,7 @@ app.use('/api/pickups', pickupRoutes);
 app.use('/api/handover', handoverRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 Handler for undefined routes
 app.use('*', (req, res) => {

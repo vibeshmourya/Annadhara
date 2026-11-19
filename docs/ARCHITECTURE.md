@@ -119,20 +119,22 @@ $$\text{availableQuantity} \ge 0, \quad \text{reservedQuantity} \ge 0, \quad \te
 
 ### 3. `Donation`
 - `title`: String, required, indexed.
-- `category`: Enum `['cooked_meals', 'bakery_grains', 'produce_fresh', 'packaged_groceries', 'dairy', 'beverages', 'prepared_catering', 'other']`.
-- `description`: String.
+- `category`: Enum (Canonical Indian Categories: `'rice_meals'`, `'roti_chapati'`, `'idli_dosa'`, `'biryani'`, `'snacks'`, `'bakery_items'`, `'fruits'`, `'vegetables'`, `'packaged_food'`, `'groceries'`, `'dairy_products'`, `'other'`; Legacy Categories for compatibility: `'cooked_meals'`, `'bakery_grains'`, `'produce_fresh'`, `'packaged_groceries'`, `'dairy'`, `'beverages'`, `'prepared_catering'`).
+- `dietaryType`: Enum `['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Other']` (default: `'Vegetarian'`).
+- `description`: String, required.
 - `totalQuantity`: Number, min 1.
 - `availableQuantity`: Number, min 0.
 - `reservedQuantity`: Number, min 0.
 - `collectedQuantity`: Number, min 0.
-- `unit`: Enum `['meals', 'kg', 'portions', 'boxes', 'liters', 'packs']`.
-- `prepDateTime`: Date, required.
-- `expiryDateTime`: Date, required, indexed.
-- `storageHandling`: Enum `['room_temperature', 'refrigerated', 'frozen', 'hot_held']`.
+- `unit`: Enum `['meals', 'portions', 'plates', 'packs', 'packets', 'boxes', 'kg', 'g', 'litres', 'liters', 'ml', 'pieces', 'pcs']`.
+- `prepDateTime`: Date, optional (defaults to `Date.now`).
+- `expiryDateTime`: Date, optional (defaults to `pickupEndTime`).
+- `storageHandling`: Enum `['room_temperature', 'refrigerated', 'frozen', 'hot_held', 'other']`.
 - `allergens`: `[String]`.
-- `pickupLocation`: `{ address: { street, city }, location: { type: 'Point', coordinates: [lng, lat] } }`.
-- `pickupStartTime`: Date.
-- `pickupEndTime`: Date, indexed.
+- `pickupLocation`: `{ address: { street, areaLocality, city, district, state, postalCode, country }, location: { type: 'Point', coordinates: [lng, lat] } }`.
+- `pickupStartTime`: Date, optional (defaults to `Date.now`).
+- `pickupEndTime`: Date, required, indexed (defines the operational pickup coordination window).
+- `imageUrl`: String (relative `/uploads/donations/...` or validated HTTPS URL).
 - `status`: Enum `['available', 'partially_reserved', 'fully_reserved', 'completed', 'expired', 'cancelled']`.
 - `donor`: ObjectId, ref `User`.
 
@@ -198,5 +200,9 @@ $$\text{availableQuantity} \ge 0, \quad \text{reservedQuantity} \ge 0, \quad \te
 3. **Server-Side Token Revocation**: Logouts execute `POST /api/auth/logout` storing the token hash in an in-memory TTL set. Reused tokens are rejected with `401 Unauthorized`.
 4. **Role-Based Access Control (RBAC)**: Enforced via `protect` and `authorize('DONOR', 'RECIPIENT', 'VOLUNTEER', 'ADMIN')` middleware. Non-admins cannot invoke admin routes, and recipients cannot edit donor listings.
 5. **Organization Verification Gate**: `requireVerifiedOrg` blocks recipients from reserving food until an administrator reviews and approves their organization.
+6. **Safe Image Upload & SSRF Protection**:
+   - `POST /api/upload/image`: Multer-backed protected multipart upload with strict MIME validation (`image/jpeg`, `image/png`, `image/webp`), 5 MB file size limit, and randomized UUID filenames stored in `server/uploads/donations/`.
+   - `POST /api/upload/validate-url`: Inspects external image links to block SSRF attempts targeting `localhost`, `127.0.0.1`, `::1`, or private IP ranges (`10.0.0.0/8`, `192.168.0.0/16`, `172.16.0.0/12`).
+   - Static Asset Serving: Served at `/uploads` with Helmet `crossOriginResourcePolicy: { policy: 'cross-origin' }` to allow seamless cross-origin loading from web and mobile clients.
 6. **Rate Limiting**: In-memory IP-based rate limiter protects `/api/auth/login` and `/api/auth/register` against brute-force attacks.
 7. **Security Headers**: Express uses `helmet()` to configure CSP, HSTS, and XSS filtering. CORS is restricted to authorized origins.

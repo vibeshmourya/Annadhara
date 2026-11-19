@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/india_constants.dart';
 import '../../models/donation_model.dart';
@@ -210,9 +211,10 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
               decoration: BoxDecoration(
                 color: AppColors.lightGreen,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                image: item.imageUrl.isNotEmpty
-                    ? DecorationImage(image: NetworkImage(item.imageUrl), fit: BoxFit.cover)
-                    : null,
+                image: DecorationImage(
+                  image: NetworkImage(ApiConstants.resolveImageUrl(item.imageUrl)),
+                  fit: BoxFit.cover,
+                ),
               ),
               child: Stack(
                 children: [

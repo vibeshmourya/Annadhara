@@ -19,7 +19,7 @@ import { ReservationModal } from '../components/donations/ReservationModal';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/StatCard';
 import { useAuth } from '../context/AuthContext';
-import { formatIndianDate, FOOD_SAFETY_DISCLAIMER } from '../constants/india';
+import { formatIndianDate, FOOD_SAFETY_DISCLAIMER, resolveImageUrl, DEFAULT_FOOD_IMAGE } from '../constants/india';
 
 export const DonationDetails = () => {
   const { id } = useParams();
@@ -120,11 +120,11 @@ export const DonationDetails = () => {
           {/* Image Pane */}
           <div className="relative h-72 md:h-full min-h-[320px] bg-stone-100">
             <img
-              src={donation.imageUrl || defaultImage}
+              src={resolveImageUrl(donation.imageUrl)}
               alt={donation.title}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.src = defaultImage;
+                e.target.src = DEFAULT_FOOD_IMAGE;
               }}
             />
             <div className="absolute top-4 left-4 flex flex-wrap gap-2">
@@ -271,13 +271,20 @@ export const DonationDetails = () => {
 
         <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-xs space-y-2">
           <div className="flex items-center space-x-2 text-xs font-bold text-[#205B43]">
-            <Calendar className="w-4 h-4 text-[#2E7D5B]" />
-            <span>Preparation Date & Time</span>
+            <Clock className="w-4 h-4 text-[#2E7D5B]" />
+            <span>Pickup Availability Window</span>
           </div>
-          <p className="text-sm font-extrabold text-[#26332D]">
-            {formatIndianDate(donation.prepDateTime)}
-          </p>
-          <p className="text-[11px] text-[#718078]">Prepared fresh under food safety hygiene guidelines.</p>
+          <div className="space-y-1">
+            <p className="text-xs text-[#26332D]">
+              <span className="font-semibold text-[#718078]">From: </span>
+              <strong>{formatIndianDate(donation.pickupStartTime || donation.createdAt)}</strong>
+            </p>
+            <p className="text-xs text-[#205B43]">
+              <span className="font-semibold text-[#718078]">Until: </span>
+              <strong>{formatIndianDate(donation.pickupEndTime)}</strong>
+            </p>
+          </div>
+          <p className="text-[11px] text-[#718078]">Please arrange pickup before the deadline expires.</p>
         </div>
       </div>
 

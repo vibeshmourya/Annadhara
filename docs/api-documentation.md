@@ -112,24 +112,33 @@ Authorization: Bearer <your-jwt-token>
   - **Body:**
     ```json
     {
-      "title": "25 Trays Veggie Pasta",
-      "category": "cooked_meals",
-      "description": "Freshly cooked pasta packaged in heat-sealed containers",
-      "totalQuantity": 25,
-      "unit": "meals",
+      "title": "30 Plates Fresh Veg Biryani & Dal",
+      "category": "rice_meals",
+      "dietaryType": "Vegetarian",
+      "description": "Prepared fresh in commercial kitchen, packed in sealed aluminum trays",
+      "totalQuantity": 30,
+      "unit": "plates",
       "storageHandling": "hot_held",
-      "allergens": ["gluten", "dairy"],
-      "prepDateTime": "2026-11-09T12:00:00Z",
-      "pickupStartTime": "2026-11-09T13:00:00Z",
-      "pickupEndTime": "2026-11-09T19:00:00Z",
-      "expiryDateTime": "2026-11-10T00:00:00Z",
+      "allergens": ["dairy"],
+      "pickupStartTime": "2026-11-18T13:00:00Z",
+      "pickupEndTime": "2026-11-18T19:00:00Z",
+      "imageUrl": "/uploads/donations/donation-1795008686969-203a3008eab5.png",
       "pickupLocation": {
-        "address": { "street": "425 Garden Way", "city": "Metropolis" },
-        "location": { "type": "Point", "coordinates": [-73.99, 40.73] }
+        "address": {
+          "street": "124, 1st Cross, Indiranagar",
+          "areaLocality": "Indiranagar",
+          "city": "Bengaluru",
+          "district": "Bengaluru Urban",
+          "state": "Karnataka",
+          "postalCode": "560038",
+          "country": "India"
+        },
+        "location": { "type": "Point", "coordinates": [77.6412, 12.9719] }
       },
       "safetyGuidelinesAccepted": true
     }
     ```
+  - **Note on Dates:** `prepDateTime` and `expiryDateTime` are optional and managed automatically. Donors only provide the operational `pickupStartTime` and `pickupEndTime` window.
 - **`PUT /api/donations/:id`**
   - **Access:** Donor (Owner) / Admin
 - **`DELETE /api/donations/:id`**
@@ -219,4 +228,40 @@ Authorization: Bearer <your-jwt-token>
   - **Body:** `{ "accountStatus": "ACTIVE" | "INACTIVE" }`
 - **`GET /api/admin/audit-logs`**
   - **Access:** Admin only
+
+---
+
+### 12. Image Upload & Validation
+- **`POST /api/upload/image`**
+  - **Access:** Authenticated
+  - **Content-Type:** `multipart/form-data`
+  - **Form Field:** `image` (JPEG, JPG, PNG, or WebP; maximum 5 MB)
+  - **Response (201):**
+    ```json
+    {
+      "success": true,
+      "message": "Image uploaded successfully",
+      "data": {
+        "url": "/uploads/donations/donation-1795008686969-203a3008eab5.png",
+        "filename": "donation-1795008686969-203a3008eab5.png",
+        "mimetype": "image/png",
+        "size": 70
+      }
+    }
+    ```
+- **`POST /api/upload/validate-url`**
+  - **Access:** Authenticated
+  - **Body:** `{ "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c" }`
+  - **Security:** Blocks SSRF attempts to private networks or localhost.
+  - **Response (200):**
+    ```json
+    {
+      "success": true,
+      "message": "Image URL is valid",
+      "data": {
+        "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
+      }
+    }
+    ```
+- **Static Assets:** Accessible at `GET /uploads/donations/:filename` (CORS and cross-origin resource policy enabled).
 

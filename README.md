@@ -85,7 +85,9 @@ Both the React and Flutter applications adhere to a consistent, high-contrast, w
 ## 4. User Roles & Core Workflows
 
 ### 🍽️ 1. Food Donors (Restaurants, Hotels, Canteens, Caterers)
-- Publish surplus food listings with quantity, unit, preparation timestamp, pickup deadline, storage conditions, and allergen tags.
+- Publish surplus food listings with quantity, unit, pickup availability window (start & deadline), storage conditions, and allergen tags. Unnecessary date fields (preparation and expiry dates) are completely removed to streamline the donation flow.
+- Choose food photos from multiple sources: native device camera/gallery upload, direct image URL, or curated Indian food presets.
+- Dietary mismatch protection: automatically alerts donors if a meal is marked Vegetarian/Vegan while containing non-vegetarian ingredients.
 - Review incoming reservation requests with one-tap **Approve** or **Decline** (with custom notes).
 - Perform inventory tracking with dynamic progress bars.
 - Confirm food handovers using the recipient's 6-character Handover Code.
@@ -247,13 +249,19 @@ npm --prefix server run test:integration
 # 3. Run Phase 4 Cross-Platform & Concurrency Tests (26 tests)
 npm --prefix server run test:phase4
 
-# 4. Run Flutter Static Analysis (0 errors, 0 warnings, 0 lints)
+# 4. Run Registration Workflow Regression Tests (32 tests)
+npm --prefix server run test:registration
+
+# 5. Run Image Upload & Category Validation Regression Tests (6 tests)
+npm --prefix server run test:upload
+
+# 6. Run Flutter Static Analysis (0 errors, 0 warnings, 0 lints)
 cd mobile && flutter analyze
 
-# 5. Run Flutter Unit & Widget Tests (6 tests)
+# 7. Run Flutter Unit & Widget Tests (8 tests)
 cd mobile && flutter test
 
-# 6. Verify Production React Build (Vite 0 errors)
+# 8. Verify Production React Build (Vite 0 errors)
 npm --prefix client run build
 ```
 

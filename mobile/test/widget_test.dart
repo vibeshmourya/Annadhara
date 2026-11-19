@@ -6,6 +6,7 @@ import 'package:foodbridge_mobile/models/reservation_model.dart';
 import 'package:foodbridge_mobile/models/pickup_model.dart';
 import 'package:foodbridge_mobile/models/organization_model.dart';
 import 'package:foodbridge_mobile/core/constants/india_constants.dart';
+import 'package:foodbridge_mobile/core/constants/api_constants.dart';
 
 void main() {
   group('Annadhara Model Unit Tests', () {
@@ -188,6 +189,24 @@ void main() {
       // Currency formatting
       expect(IndiaConstants.formatINR(150000), '₹1,50,000');
       expect(IndiaConstants.formatINR(500), '₹500');
+
+      // Canonical Indian Food Categories
+      final categoryIds = IndiaConstants.foodCategories.map((c) => c['id']).toSet();
+      expect(categoryIds.contains('rice_meals'), true);
+      expect(categoryIds.contains('roti_chapati'), true);
+      expect(categoryIds.contains('idli_dosa'), true);
+      expect(categoryIds.contains('biryani'), true);
+    });
+
+    test('ApiConstants image URL resolver', () {
+      expect(ApiConstants.resolveImageUrl(null).startsWith('http'), true);
+      expect(ApiConstants.resolveImageUrl('').startsWith('http'), true);
+      expect(
+        ApiConstants.resolveImageUrl('https://example.com/pic.jpg'),
+        'https://example.com/pic.jpg',
+      );
+      final resolvedRelative = ApiConstants.resolveImageUrl('/uploads/donations/item.jpg');
+      expect(resolvedRelative.contains('/uploads/donations/item.jpg'), true);
     });
   });
 

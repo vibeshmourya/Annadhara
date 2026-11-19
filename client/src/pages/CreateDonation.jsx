@@ -1,7 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircle, ShieldCheck, AlertCircle, ArrowLeft, Image as ImageIcon, MapPin, Clock, Calendar, Info } from 'lucide-react';
-import { donationApi } from '../api/endpoints';
+import {
+  PlusCircle,
+  ShieldCheck,
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Image as ImageIcon,
+  UploadCloud,
+  Link as LinkIcon,
+  Sparkles,
+  Trash2,
+  RefreshCw,
+  MapPin,
+  Clock,
+  CheckCircle2,
+} from 'lucide-react';
+import { donationApi, uploadApi } from '../api/endpoints';
 import {
   FOOD_CATEGORIES,
   FOOD_UNITS,
@@ -9,16 +24,53 @@ import {
   INDIAN_STATES,
   isValidPINCode,
   FOOD_SAFETY_DISCLAIMER,
+  DEFAULT_FOOD_IMAGE,
+  resolveImageUrl,
 } from '../constants/india';
+
+// Common non-vegetarian indicator keywords for mismatch warning
+const NON_VEG_REGEX = /\b(egg|eggs|chicken|mutton|fish|meat|beef|pork|prawn|prawns|seafood|bacon|ham|crab|crabs|duck|keema|gosht|murgh)\b/i;
+
+// Curated high quality food image presets
+const FOOD_PRESETS = [
+  {
+    name: 'Rice & Meals',
+    url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+    icon: '🍚',
+  },
+  {
+    name: 'Roti & Sabzi',
+    url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80',
+    icon: '🫓',
+  },
+  {
+    name: 'Biryani',
+    url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
+    icon: '🍲',
+  },
+  {
+    name: 'Idli & Dosa',
+    url: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=600&auto=format&fit=crop&q=80',
+    icon: '🥞',
+  },
+  {
+    name: 'Bakery & Bread',
+    url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+    icon: '🍞',
+  },
+  {
+    name: 'Fruits & Veggies',
+    url: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600&auto=format&fit=crop&q=80',
+    icon: '🍎',
+  },
+];
 
 export const CreateDonation = () => {
   const navigate = useNavigate();
 
   const now = new Date();
-  const defaultPrep = new Date(now.getTime() - 1 * 3600 * 1000).toISOString().slice(0, 16);
   const defaultPickupStart = now.toISOString().slice(0, 16);
   const defaultPickupEnd = new Date(now.getTime() + 6 * 3600 * 1000).toISOString().slice(0, 16);
-  const defaultExpiry = new Date(now.getTime() + 12 * 3600 * 1000).toISOString().slice(0, 16);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -27,8 +79,6 @@ export const CreateDonation = () => {
     description: '',
     totalQuantity: 25,
     unit: 'meals',
-    prepDateTime: defaultPrep,
-    expiryDateTime: defaultExpiry,
     storageHandling: 'hot_held',
     allergens: '',
     street: '42/1, 12th Main Road',
@@ -41,12 +91,28 @@ export const CreateDonation = () => {
     fssaiNumber: '',
     pickupStartTime: defaultPickupStart,
     pickupEndTime: defaultPickupEnd,
-    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+    imageUrl: FOOD_PRESETS[0].url,
     safetyGuidelinesAccepted: false,
   });
 
+  const [imageTab, setImageTab] = useState('upload'); // 'upload' | 'url' | 'presets'
+  const [urlInput, setUrlInput] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Check for dietary mismatch
+  const dietaryMismatch = useMemo(() => {
+    if (formData.dietaryType === 'Vegetarian' || formData.dietaryType === 'Vegan') {
+      const textToScan = `${formData.title} ${formData.description}`;
+      const match = textToScan.match(NON_VEG_REGEX);
+      if (match) {
+        return match[0];
+      }
+    }
+    return null;
+  }, [formData.dietaryType, formData.title, formData.description]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -56,12 +122,56 @@ export const CreateDonation = () => {
     }));
   };
 
+  // Handle local file selection and upload
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+
+    // Validate size (5 MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image size exceeds 5 MB. Please select a smaller photo.');
+      return;
+    }
+
+    // Validate mime
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      setUploadError('Only JPG, PNG, and WebP images are supported.');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setUploadError('');
+      const uploadData = new FormData();
+      uploadData.append('image', file);
+
+      const res = await uploadApi.uploadImage(uploadData);
+      if (res.data?.success && res.data?.data?.url) {
+        setFormData((prev) => ({ ...prev, imageUrl: res.data.data.url }));
+      } else {
+        setUploadError('Upload failed. Please try again.');
+      }
+    } catch (err) {
+      setUploadError(
+        err.response?.data?.message || 'Error uploading image to server. You may also provide a direct URL.'
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleApplyUrl = () => {
+    if (!urlInput.trim()) return;
+    setFormData((prev) => ({ ...prev, imageUrl: urlInput.trim() }));
+    setUrlInput('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!formData.safetyGuidelinesAccepted) {
-      setError('You must confirm the food safety declaration before publishing');
+      setError('You must confirm the food information and handling declaration before publishing');
       return;
     }
 
@@ -84,8 +194,6 @@ export const CreateDonation = () => {
         description: formData.description.trim(),
         totalQuantity: Number(formData.totalQuantity),
         unit: formData.unit,
-        prepDateTime: new Date(formData.prepDateTime).toISOString(),
-        expiryDateTime: new Date(formData.expiryDateTime).toISOString(),
         storageHandling: formData.storageHandling,
         allergens: formData.allergens
           ? formData.allergens.split(',').map((s) => s.trim()).filter(Boolean)
@@ -162,6 +270,17 @@ export const CreateDonation = () => {
           </div>
         )}
 
+        {/* Dietary Mismatch Warning Banner */}
+        {dietaryMismatch && (
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start space-x-2.5 animate-pulse">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">Dietary Classification Warning: </span>
+              You have selected <strong>{formData.dietaryType}</strong>, but your title or description contains the word "<strong>{dietaryMismatch}</strong>", which may indicate non-vegetarian ingredients. Please ensure the classification matches the prepared dish.
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Section 1: Food Details & Indian Categories */}
           <div className="space-y-4">
@@ -178,7 +297,7 @@ export const CreateDonation = () => {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  placeholder="e.g. 30 Portions Veg Biryani & Dal Makhani"
+                  placeholder="e.g. 30 Plates Veg Biryani & Dal Makhani"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#F8FAF8] text-sm text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
                 />
               </div>
@@ -223,14 +342,14 @@ export const CreateDonation = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#26332D] mb-1">Description & Packaging *</label>
+              <label className="block text-xs font-bold text-[#26332D] mb-1">Description & Ingredients</label>
               <textarea
                 name="description"
                 rows={3}
                 value={formData.description}
                 onChange={handleChange}
                 required
-                placeholder="Describe preparation, containers, packaging, and handling (e.g. Packed in heat-sealed aluminum containers, prepared at 1:00 PM today)..."
+                placeholder="Describe key ingredients, preparation, containers, and packaging (e.g. Packed in food-grade aluminum trays, prepared fresh for afternoon buffet)..."
                 className="w-full px-3.5 py-2 rounded-xl border border-stone-200 bg-[#F8FAF8] text-xs text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
               />
             </div>
@@ -251,7 +370,7 @@ export const CreateDonation = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#26332D] mb-1">Unit of Measurement (Metric) *</label>
+                <label className="block text-xs font-bold text-[#26332D] mb-1">Unit of Measurement *</label>
                 <select
                   name="unit"
                   value={formData.unit}
@@ -268,10 +387,10 @@ export const CreateDonation = () => {
             </div>
           </div>
 
-          {/* Section 2: Safety & Storage */}
+          {/* Section 2: Storage, Allergens & FSSAI */}
           <div className="space-y-4">
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#205B43] border-b border-stone-100 pb-2">
-              2. Food Safety, Storage & FSSAI Guidelines
+              2. Food Storage, Handling & Allergens
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -287,6 +406,7 @@ export const CreateDonation = () => {
                   <option value="refrigerated">❄️ Refrigerated (Below 4°C)</option>
                   <option value="room_temperature">🍞 Room Temperature (Dry Goods)</option>
                   <option value="frozen">🧊 Frozen</option>
+                  <option value="other">🍽️ Other</option>
                 </select>
               </div>
 
@@ -297,14 +417,14 @@ export const CreateDonation = () => {
                   name="allergens"
                   value={formData.allergens}
                   onChange={handleChange}
-                  placeholder="e.g. Dairy, Gluten, Mustard (or None)"
+                  placeholder="e.g. Dairy, Gluten, Peanuts (or None)"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#F8FAF8] text-sm text-[#26332D]"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#26332D] mb-1">
-                  FSSAI License / Reg. No. <span className="text-[10px] text-[#718078] font-normal">(Optional)</span>
+                  FSSAI License No. <span className="text-[10px] text-[#718078] font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -317,38 +437,175 @@ export const CreateDonation = () => {
                 />
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-[#26332D] mb-1">Preparation Date & Time *</label>
-                <input
-                  type="datetime-local"
-                  name="prepDateTime"
-                  value={formData.prepDateTime}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#F8FAF8] text-xs text-[#26332D]"
-                />
+          {/* Section 3: Food Image Selection & Upload */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#205B43] border-b border-stone-100 pb-2">
+              3. Food Image
+            </h3>
+
+            {/* Image Preview & Current Selection */}
+            <div className="flex flex-col sm:flex-row gap-5 items-start">
+              <div className="relative w-full sm:w-48 h-36 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shrink-0 shadow-xs">
+                {formData.imageUrl ? (
+                  <img
+                    src={resolveImageUrl(formData.imageUrl)}
+                    alt="Food preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = DEFAULT_FOOD_IMAGE;
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-400">
+                    <ImageIcon className="w-8 h-8 mb-1" />
+                    <span className="text-[10px]">No Image Selected</span>
+                  </div>
+                )}
+                {formData.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData((p) => ({ ...p, imageUrl: '' }))}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                    title="Remove image"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#26332D] mb-1">Safe Consumption / Expiry Deadline *</label>
-                <input
-                  type="datetime-local"
-                  name="expiryDateTime"
-                  value={formData.expiryDateTime}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#F8FAF8] text-xs text-[#26332D]"
-                />
+              <div className="flex-1 w-full space-y-3">
+                {/* Method Tabs */}
+                <div className="flex space-x-2 border-b border-stone-200 pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setImageTab('upload')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors ${
+                      imageTab === 'upload'
+                        ? 'bg-[#2E7D5B] text-white'
+                        : 'bg-stone-100 text-[#718078] hover:bg-stone-200'
+                    }`}
+                  >
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Device Upload</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setImageTab('url')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors ${
+                      imageTab === 'url'
+                        ? 'bg-[#2E7D5B] text-white'
+                        : 'bg-stone-100 text-[#718078] hover:bg-stone-200'
+                    }`}
+                  >
+                    <LinkIcon className="w-3.5 h-3.5" />
+                    <span>Image URL</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setImageTab('presets')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors ${
+                      imageTab === 'presets'
+                        ? 'bg-[#2E7D5B] text-white'
+                        : 'bg-stone-100 text-[#718078] hover:bg-stone-200'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Quick Presets</span>
+                  </button>
+                </div>
+
+                {uploadError && (
+                  <p className="text-[11px] text-[#D9534F] font-semibold">{uploadError}</p>
+                )}
+
+                {/* Tab: Upload */}
+                {imageTab === 'upload' && (
+                  <div className="border-2 border-dashed border-stone-200 rounded-2xl p-4 text-center hover:border-[#2E7D5B]/50 transition-colors bg-[#F8FAF8]">
+                    <input
+                      type="file"
+                      id="food-photo-input"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
+                      }}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="food-photo-input"
+                      className="cursor-pointer flex flex-col items-center justify-center space-y-1.5"
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <RefreshCw className="w-6 h-6 text-[#2E7D5B] animate-spin" />
+                          <span className="text-xs font-bold text-[#205B43]">Uploading image...</span>
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="w-6 h-6 text-[#2E7D5B]" />
+                          <span className="text-xs font-bold text-[#26332D]">
+                            Click to browse photo from your device
+                          </span>
+                          <span className="text-[11px] text-[#718078]">
+                            Supports JPG, PNG, and WebP (Max 5 MB)
+                          </span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                )}
+
+                {/* Tab: URL */}
+                {imageTab === 'url' && (
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      placeholder="Paste image link (https://...)"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      className="flex-1 px-3.5 py-2 rounded-xl border border-stone-200 bg-[#F8FAF8] text-xs text-[#26332D]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyUrl}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#2E7D5B] hover:bg-[#205B43]"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                )}
+
+                {/* Tab: Presets */}
+                {imageTab === 'presets' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {FOOD_PRESETS.map((pst) => (
+                      <button
+                        key={pst.name}
+                        type="button"
+                        onClick={() => setFormData((p) => ({ ...p, imageUrl: pst.url }))}
+                        className={`p-2 rounded-xl border text-xs font-bold text-left flex items-center space-x-1.5 transition-all ${
+                          formData.imageUrl === pst.url
+                            ? 'border-[#2E7D5B] bg-[#EAF4EE] text-[#205B43]'
+                            : 'border-stone-200 bg-[#F8FAF8] text-[#718078] hover:bg-stone-100'
+                        }`}
+                      >
+                        <span className="text-sm">{pst.icon}</span>
+                        <span className="truncate">{pst.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Section 3: Pickup Windows & Indian Address */}
+          {/* Section 4: Pickup Window & Indian Address */}
           <div className="space-y-4">
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#205B43] border-b border-stone-100 pb-2">
-              3. Pickup Timing & Address (India)
+              4. Pickup Availability Window & Location (India)
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -365,7 +622,7 @@ export const CreateDonation = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#26332D] mb-1">Pickup Deadline *</label>
+                <label className="block text-xs font-bold text-[#26332D] mb-1">Pickup Deadline / End Time *</label>
                 <input
                   type="datetime-local"
                   name="pickupEndTime"
@@ -449,21 +706,9 @@ export const CreateDonation = () => {
                 />
               </div>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#26332D] mb-1">Optional Food Photo URL</label>
-              <input
-                type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-[#F8FAF8] text-xs text-[#26332D]"
-              />
-            </div>
           </div>
 
-          {/* Safety Confirmation Checkbox & FSSAI Disclaimer */}
+          {/* Section 5: Accurate Declaration Checkbox & FSSAI Advisory */}
           <div className="p-4 rounded-2xl bg-[#EAF4EE] border border-[#2E7D5B]/20 space-y-2">
             <div className="flex items-start space-x-3">
               <input
@@ -475,7 +720,7 @@ export const CreateDonation = () => {
                 className="mt-1 w-4 h-4 rounded text-[#2E7D5B] focus:ring-[#2E7D5B]"
               />
               <label htmlFor="safetyGuidelinesAccepted" className="text-xs text-[#205B43] leading-relaxed cursor-pointer">
-                <strong>Food Safety & Quality Declaration:</strong> I certify that this surplus food was prepared hygienically, has been stored at proper temperatures, and is fit for human consumption before handover.
+                <strong>Food Quality & Safety Declaration:</strong> I confirm that the food information provided is accurate and that the food has been handled responsibly in accordance with food safety standards.
               </label>
             </div>
             <p className="text-[11px] text-[#718078] pl-7 leading-relaxed">

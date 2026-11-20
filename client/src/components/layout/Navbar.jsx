@@ -9,14 +9,18 @@ import {
   X,
   User,
   ArrowRight,
+  Globe,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { en } from '../../locales/en';
 
 export const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
@@ -69,6 +73,51 @@ export const Navbar = () => {
             >
               Impact
             </a>
+
+            {/* Language Selector Pill */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#205B43] bg-[#EAF4EE] hover:bg-[#dceddf] border border-[#2E7D5B]/20 transition-all"
+              >
+                <span>🇮🇳</span>
+                <span>English</span>
+                <ChevronDown className="w-3 h-3 text-[#2E7D5B]" />
+              </button>
+
+              {langMenuOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg border border-stone-200 py-2 z-50 animate-in fade-in zoom-in-95"
+                  onMouseLeave={() => setLangMenuOpen(false)}
+                >
+                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#718078] border-b border-stone-100">
+                    Indian Languages
+                  </div>
+                  {en.languages.map((l) => (
+                    <div
+                      key={l.code}
+                      className={`px-3 py-2 text-xs flex items-center justify-between ${
+                        l.available
+                          ? 'font-bold text-[#2E7D5B] bg-[#EAF4EE]/40 cursor-default'
+                          : 'text-stone-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <span>
+                        {l.name} ({l.native})
+                      </span>
+                      {l.available ? (
+                        <span className="text-[10px] font-bold text-[#2E7D5B]">Active</span>
+                      ) : (
+                        <span className="text-[9px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">
+                          Soon
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {isAuthenticated ? (
               <div className="flex items-center space-x-2 pl-3 border-l border-[#E3EAE5]">
@@ -156,6 +205,51 @@ export const Navbar = () => {
           </a>
 
           <div className="pt-3 border-t border-[#E3EAE5] space-y-2">
+            {/* Language Selector Pill */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#205B43] bg-[#EAF4EE] hover:bg-[#dceddf] border border-[#2E7D5B]/20 transition-all"
+              >
+                <span>🇮🇳</span>
+                <span>English</span>
+                <ChevronDown className="w-3 h-3 text-[#2E7D5B]" />
+              </button>
+
+              {langMenuOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg border border-stone-200 py-2 z-50 animate-in fade-in zoom-in-95"
+                  onMouseLeave={() => setLangMenuOpen(false)}
+                >
+                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#718078] border-b border-stone-100">
+                    Indian Languages
+                  </div>
+                  {en.languages.map((l) => (
+                    <div
+                      key={l.code}
+                      className={`px-3 py-2 text-xs flex items-center justify-between ${
+                        l.available
+                          ? 'font-bold text-[#2E7D5B] bg-[#EAF4EE]/40 cursor-default'
+                          : 'text-stone-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <span>
+                        {l.name} ({l.native})
+                      </span>
+                      {l.available ? (
+                        <span className="text-[10px] font-bold text-[#2E7D5B]">Active</span>
+                      ) : (
+                        <span className="text-[9px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded">
+                          Soon
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {isAuthenticated ? (
               <>
                 <Link

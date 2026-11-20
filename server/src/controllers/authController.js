@@ -3,6 +3,12 @@ const User = require('../models/User');
 const Organization = require('../models/Organization');
 const { logAudit } = require('../services/auditService');
 const { revokeToken } = require('../services/tokenService');
+const {
+  ORGANIZATION_TYPES,
+  normalizeRole,
+  normalizeOrgType,
+  normalizeAddress,
+} = require('../utils/validationHelpers');
 
 const generateToken = (userId, role) => {
   return jwt.sign(
@@ -12,17 +18,19 @@ const generateToken = (userId, role) => {
   );
 };
 
-// Normalize organization type string
-const normalizeOrgType = (type, role) => {
-  if (!type) return role === 'DONOR' ? 'Restaurant' : 'NGO';
-  const lower = type.toLowerCase().replace(/[^a-z]/g, '');
-  if (lower.includes('restaurant')) return 'Restaurant';
-  if (lower.includes('hotel')) return 'Hotel';
-  if (lower.includes('canteen')) return 'College Canteen';
-  if (lower.includes('event')) return 'Event Organizer';
-  if (lower.includes('ngo')) return 'NGO';
-  if (lower.includes('distribution') || lower.includes('foodbank')) return 'Food Distribution Organization';
-  return 'Other';
+/**
+ * Formats Mongoose ValidationError into structured { message, errors } payload.
+ */
+const formatValidationErrors = (validationErr, prefix = '') => {
+  const errors = Object.entries(validationErr.errors || {}).map(([field, detail]) => ({
+    field,
+    message: detail.message,
+  }));
+  const joined = errors.map((e) => e.message).join(', ');
+  return {
+    message: prefix ? `${prefix}: ${joined}` : joined,
+    errors,
+  };
 };
 
 /**
@@ -30,12 +38,36 @@ const normalizeOrgType = (type, role) => {
  * POST /api/auth/register
  */
 const register = async (req, res, next) => {
-  try {
-    const { name, email, password, role, phone, address, organizationName, organizationType, registrationNumber } =
-      req.body;
+  let savedUserId = null;
 
-    // Normalize role to uppercase
-    const requestedRole = (role || 'DONOR').toUpperCase();
+  try {
+    const rawName = req.body.name ?? req.body.fullName ?? '';
+    const name = String(rawName).trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = req.body.password;
+    const rawPhone = req.body.phone ?? req.body.contactPhone ?? '';
+    const phone = String(rawPhone || '').trim();
+    const rawRegNo = req.body.registrationNumber ?? req.body.registrationId ?? '';
+    const registrationNumber = String(rawRegNo || '').trim();
+    const normalizedAddress = normalizeAddress(req.body.address, req.body);
+
+    const orgName = req.body.organizationName ? String(req.body.organizationName).trim() : '';
+    const orgTypeRaw = req.body.organizationType ?? req.body.type ?? '';
+
+    // Normalize role to uppercase (supporting FOOD_DONOR / RECIPIENT_NGO aliases)
+    const requestedRole = normalizeRole(req.body.role || 'DONOR');
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Auth][Register] Request payload summary:', {
+        name,
+        email,
+        role: requestedRole,
+        hasPhone: Boolean(phone),
+        organizationName: orgName || null,
+        organizationType: orgTypeRaw || null,
+        city: normalizedAddress.city || null,
+      });
+    }
 
     // Security requirement: Prevent public registration as ADMIN
     if (requestedRole === 'ADMIN') {
@@ -49,45 +81,97 @@ const register = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Role must be one of: DONOR, RECIPIENT, VOLUNTEER',
+        errors: [{ field: 'role', message: 'Role must be one of: DONOR, RECIPIENT, VOLUNTEER' }],
       });
     }
 
-    // Check duplicate email
+    // Check duplicate email (409 Conflict)
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         message: 'An account with this email address already exists',
+        errors: [{ field: 'email', message: 'This email address is already registered' }],
       });
     }
 
-    // Create user record (pre-save hashes plain password virtual into passwordHash)
+    const shouldCreateOrg = Boolean(orgName) && (requestedRole === 'DONOR' || requestedRole === 'RECIPIENT');
+    let org = null;
+
+    // Prepare user instance (validation runs before any writes)
     const user = new User({
       name,
       email,
-      phone: phone || '',
+      phone,
       role: requestedRole,
       accountStatus: 'ACTIVE',
-      address: address || {},
+      address: normalizedAddress,
       isVerified: requestedRole === 'DONOR' || requestedRole === 'VOLUNTEER',
     });
     user.password = password;
 
-    await user.save();
+    if (shouldCreateOrg) {
+      if (!phone) {
+        return res.status(422).json({
+          success: false,
+          message: 'Organization validation failed: Contact phone number is required',
+          errors: [{ field: 'phone', message: 'Organization contact phone is required' }],
+        });
+      }
 
-    // If organization details provided, create organization with PENDING status for NGOs, VERIFIED for Donors
-    if (organizationName && (requestedRole === 'DONOR' || requestedRole === 'RECIPIENT')) {
-      const org = await Organization.create({
-        organizationName,
-        organizationType: normalizeOrgType(organizationType, requestedRole),
-        registrationNumber: registrationNumber || '',
+      const defaultOrgType = requestedRole === 'DONOR' ? 'Restaurant' : 'NGO';
+      const normalizedOrgType = normalizeOrgType(orgTypeRaw, defaultOrgType);
+      if (!normalizedOrgType) {
+        return res.status(422).json({
+          success: false,
+          message: `Organization validation failed: Invalid organization type "${orgTypeRaw}"`,
+          errors: [
+            {
+              field: 'organizationType',
+              message: `Organization type must be one of: ${ORGANIZATION_TYPES.join(', ')}`,
+            },
+          ],
+        });
+      }
+
+      const rawFssai = req.body.fssaiNumber ?? req.body.fssaiLicenseNumber ?? '';
+      const fssaiNumber = String(rawFssai || '').trim();
+
+      org = new Organization({
+        organizationName: orgName,
+        organizationType: normalizedOrgType,
+        registrationNumber,
+        fssaiNumber,
+        contactPerson: name,
         email,
-        phone: phone || '',
-        address: address || {},
+        phone,
+        address: normalizedAddress,
         verificationStatus: requestedRole === 'DONOR' ? 'VERIFIED' : 'PENDING',
         createdBy: user._id,
       });
 
+      // Validate both User and Organization BEFORE writing to MongoDB so partial failures never orphan users
+      await user.validate();
+      try {
+        await org.validate();
+      } catch (orgValErr) {
+        if (orgValErr.name === 'ValidationError') {
+          const formatted = formatValidationErrors(orgValErr, 'Organization validation failed');
+          return res.status(422).json({
+            success: false,
+            message: formatted.message,
+            errors: formatted.errors,
+          });
+        }
+        throw orgValErr;
+      }
+    }
+
+    await user.save();
+    savedUserId = user._id;
+
+    if (org) {
+      await org.save();
       user.organizationId = org._id;
       await user.save();
     }
@@ -115,6 +199,14 @@ const register = async (req, res, next) => {
       },
     });
   } catch (error) {
+    // Rollback orphaned user record if organization save/linking failed unexpectedly after user save
+    if (savedUserId) {
+      try {
+        await User.findByIdAndDelete(savedUserId);
+      } catch (rollbackErr) {
+        console.error('[Auth][Register] Rollback cleanup failed:', rollbackErr.message);
+      }
+    }
     next(error);
   }
 };

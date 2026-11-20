@@ -54,9 +54,12 @@ const userSchema = new mongoose.Schema(
     },
     address: {
       street: { type: String, default: '' },
+      areaLocality: { type: String, default: '' },
       city: { type: String, default: '' },
+      district: { type: String, default: '' },
       state: { type: String, default: '' },
       postalCode: { type: String, default: '' },
+      country: { type: String, default: 'India' },
     },
     location: {
       type: {

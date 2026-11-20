@@ -86,8 +86,13 @@ class AuthProvider with ChangeNotifier {
     String? organizationName,
     String? organizationType,
     String? registrationNumber,
+    String? fssaiNumber,
     String? street,
+    String? areaLocality,
     String? city,
+    String? district,
+    String? state,
+    String? postalCode,
   }) async {
     _isLoading = true;
     _errorMessage = '';
@@ -100,20 +105,25 @@ class AuthProvider with ChangeNotifier {
         'password': password,
         'role': role.toUpperCase(),
         'phone': phone,
-      };
-
-      if (street != null || city != null) {
-        body['address'] = {
+        'address': {
           'street': street ?? '',
+          'areaLocality': areaLocality ?? '',
           'city': city ?? '',
-        };
-      }
+          'district': district ?? '',
+          'state': state ?? 'Karnataka',
+          'postalCode': postalCode ?? '',
+          'country': 'India',
+        },
+      };
 
       if (organizationName != null && organizationName.isNotEmpty) {
         body['organizationName'] = organizationName;
         body['organizationType'] = organizationType ?? 'Restaurant';
         if (registrationNumber != null && registrationNumber.isNotEmpty) {
           body['registrationNumber'] = registrationNumber;
+        }
+        if (fssaiNumber != null && fssaiNumber.isNotEmpty) {
+          body['fssaiNumber'] = fssaiNumber;
         }
       }
 

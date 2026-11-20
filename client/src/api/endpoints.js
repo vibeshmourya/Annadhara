@@ -80,3 +80,12 @@ export const adminApi = {
   resolveDonationReport: (id, data) => api.patch(`/admin/donations/${id}/resolve-report`, data),
   getAuditLogs: () => api.get('/admin/audit-logs'),
 };
+
+// Upload
+export const uploadApi = {
+  uploadImage: (formData) =>
+    api.post('/upload/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  validateUrl: (url) => api.post('/upload/validate-url', { url }),
+};

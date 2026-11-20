@@ -10,8 +10,16 @@ class DonationModel {
   final String unit;
   final String storageHandling;
   final List<String> allergens;
-  final String city;
+  final String dietaryType;
+  final String? fssaiNumber;
+  final bool fssaiDeclaration;
   final String street;
+  final String areaLocality;
+  final String city;
+  final String district;
+  final String state;
+  final String postalCode;
+  final String country;
   final DateTime pickupStartTime;
   final DateTime pickupEndTime;
   final String imageUrl;
@@ -33,8 +41,16 @@ class DonationModel {
     required this.unit,
     required this.storageHandling,
     this.allergens = const [],
-    required this.city,
+    this.dietaryType = 'veg',
+    this.fssaiNumber,
+    this.fssaiDeclaration = false,
     required this.street,
+    this.areaLocality = '',
+    required this.city,
+    this.district = '',
+    this.state = 'Karnataka',
+    this.postalCode = '',
+    this.country = 'India',
     required this.pickupStartTime,
     required this.pickupEndTime,
     this.imageUrl = '',
@@ -60,11 +76,23 @@ class DonationModel {
       oName = json['organization']['name'] ?? json['organization']['organizationName'];
     }
 
-    String c = '';
     String s = '';
+    String area = '';
+    String c = '';
+    String dist = '';
+    String st = 'Karnataka';
+    String pin = '';
+    String cntry = 'India';
+
     if (json['pickupLocation'] is Map && json['pickupLocation']['address'] is Map) {
-      c = json['pickupLocation']['address']['city'] ?? '';
-      s = json['pickupLocation']['address']['street'] ?? '';
+      final addr = json['pickupLocation']['address'];
+      s = addr['street'] ?? '';
+      area = addr['areaLocality'] ?? '';
+      c = addr['city'] ?? '';
+      dist = addr['district'] ?? '';
+      st = addr['state'] ?? 'Karnataka';
+      pin = addr['postalCode'] ?? '';
+      cntry = addr['country'] ?? 'India';
     }
 
     List<String> algs = [];
@@ -75,7 +103,7 @@ class DonationModel {
     return DonationModel(
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? '',
-      category: json['category'] ?? 'cooked_meals',
+      category: json['category'] ?? 'rice_meals',
       description: json['description'] ?? '',
       totalQuantity: (json['totalQuantity'] ?? 0).toDouble(),
       availableQuantity: (json['availableQuantity'] ?? 0).toDouble(),
@@ -84,8 +112,16 @@ class DonationModel {
       unit: json['unit'] ?? 'meals',
       storageHandling: json['storageHandling'] ?? 'room_temperature',
       allergens: algs,
-      city: c,
+      dietaryType: json['dietaryType'] ?? 'veg',
+      fssaiNumber: json['fssaiNumber'],
+      fssaiDeclaration: json['fssaiDeclaration'] ?? false,
       street: s,
+      areaLocality: area,
+      city: c,
+      district: dist,
+      state: st,
+      postalCode: pin,
+      country: cntry,
       pickupStartTime: DateTime.tryParse(json['pickupStartTime'] ?? '') ?? DateTime.now(),
       pickupEndTime: DateTime.tryParse(json['pickupEndTime'] ?? '') ?? DateTime.now().add(const Duration(hours: 6)),
       imageUrl: json['imageUrl'] ?? '',
@@ -95,5 +131,39 @@ class DonationModel {
       organizationName: oName,
       distanceKm: json['distanceKm'] != null ? (json['distanceKm'] as num).toDouble() : null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'category': category,
+      'description': description,
+      'totalQuantity': totalQuantity,
+      'availableQuantity': availableQuantity,
+      'reservedQuantity': reservedQuantity,
+      'collectedQuantity': collectedQuantity,
+      'unit': unit,
+      'storageHandling': storageHandling,
+      'allergens': allergens,
+      'dietaryType': dietaryType,
+      'fssaiNumber': fssaiNumber,
+      'fssaiDeclaration': fssaiDeclaration,
+      'street': street,
+      'areaLocality': areaLocality,
+      'city': city,
+      'district': district,
+      'state': state,
+      'postalCode': postalCode,
+      'country': country,
+      'pickupStartTime': pickupStartTime.toIso8601String(),
+      'pickupEndTime': pickupEndTime.toIso8601String(),
+      'imageUrl': imageUrl,
+      'status': status,
+      'donorId': donorId,
+      'donorName': donorName,
+      'organizationName': organizationName,
+      'distanceKm': distanceKm,
+    };
   }
 }

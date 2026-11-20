@@ -5,6 +5,7 @@
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
+  let errors = Array.isArray(err.errors) ? err.errors : undefined;
 
   // Mongoose CastError (bad ObjectId)
   if (err.name === 'CastError') {
@@ -14,17 +15,21 @@ const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key error (code 11000)
   if (err.code === 11000) {
-    statusCode = 400;
+    statusCode = 409;
     const field = Object.keys(err.keyValue || {})[0] || 'field';
-    message = `A record with this ${field} already exists`;
+    message = `An account or record with this ${field} already exists`;
+    errors = [{ field, message: `This ${field} is already registered` }];
   }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
-    statusCode = 400;
-    message = Object.values(err.errors || {})
-      .map((val) => val.message)
-      .join(', ');
+    statusCode = err.statusCode || 400;
+    const fieldErrors = Object.entries(err.errors || {}).map(([field, val]) => ({
+      field,
+      message: val.message,
+    }));
+    message = fieldErrors.map((e) => e.message).join(', ');
+    errors = fieldErrors;
   }
 
   // JWT errors
@@ -38,10 +43,20 @@ const errorHandler = (err, req, res, next) => {
     message = 'Authentication token has expired';
   }
 
-  res.status(statusCode).json({
+  // Hide unexpected internal error details in production
+  if (statusCode === 500 && process.env.NODE_ENV === 'production') {
+    message = 'An unexpected server error occurred. Please try again later.';
+  }
+
+  const payload = {
     success: false,
     message,
-  });
+  };
+  if (errors && errors.length > 0) {
+    payload.errors = errors;
+  }
+
+  res.status(statusCode).json(payload);
 };
 
 module.exports = errorHandler;

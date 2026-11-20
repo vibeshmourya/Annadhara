@@ -2,19 +2,7 @@ const Organization = require('../models/Organization');
 const User = require('../models/User');
 const { createNotification } = require('../services/notificationService');
 const { logAudit } = require('../services/auditService');
-
-// Normalize organization type helper
-const normalizeOrgType = (type) => {
-  if (!type) return 'Other';
-  const lower = type.toLowerCase().replace(/[^a-z]/g, '');
-  if (lower.includes('restaurant')) return 'Restaurant';
-  if (lower.includes('hotel')) return 'Hotel';
-  if (lower.includes('canteen')) return 'College Canteen';
-  if (lower.includes('event')) return 'Event Organizer';
-  if (lower.includes('ngo')) return 'NGO';
-  if (lower.includes('distribution') || lower.includes('foodbank')) return 'Food Distribution Organization';
-  return 'Other';
-};
+const { ORGANIZATION_TYPES, normalizeOrgType, normalizeAddress } = require('../utils/validationHelpers');
 
 /**
  * Submit organization details (Starts with PENDING status)
@@ -56,14 +44,28 @@ const createOrganization = async (req, res, next) => {
       });
     }
 
+    const resolvedOrgType = normalizeOrgType(organizationType || type, 'Other');
+    if (!resolvedOrgType) {
+      return res.status(422).json({
+        success: false,
+        message: 'Organization validation failed: Invalid organization type',
+        errors: [
+          {
+            field: 'organizationType',
+            message: `Organization type must be one of: ${ORGANIZATION_TYPES.join(', ')}`,
+          },
+        ],
+      });
+    }
+
     const org = new Organization({
       organizationName: orgName,
-      organizationType: normalizeOrgType(organizationType || type),
+      organizationType: resolvedOrgType,
       description: (description || '').trim(),
       contactPerson: (contactPerson || req.user.name || '').trim(),
       email: (email || contactEmail || req.user.email).trim().toLowerCase(),
       phone: (phone || contactPhone || req.user.phone || '').trim(),
-      address: address || {},
+      address: normalizeAddress(address),
       location: location || { type: 'Point', coordinates: [0, 0] },
       registrationNumber: registrationNumber || '',
       verificationStatus: 'PENDING', // Always starts as PENDING per requirement
@@ -154,7 +156,20 @@ const updateMyOrganization = async (req, res, next) => {
       org.organizationName = (updates.organizationName || updates.name).trim();
     }
     if (updates.organizationType || updates.type) {
-      org.organizationType = normalizeOrgType(updates.organizationType || updates.type);
+      const resolvedType = normalizeOrgType(updates.organizationType || updates.type);
+      if (!resolvedType) {
+        return res.status(422).json({
+          success: false,
+          message: 'Organization validation failed: Invalid organization type',
+          errors: [
+            {
+              field: 'organizationType',
+              message: `Organization type must be one of: ${ORGANIZATION_TYPES.join(', ')}`,
+            },
+          ],
+        });
+      }
+      org.organizationType = resolvedType;
     }
     if (updates.description !== undefined) org.description = updates.description.trim();
     if (updates.contactPerson !== undefined) org.contactPerson = updates.contactPerson.trim();

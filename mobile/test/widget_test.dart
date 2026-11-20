@@ -5,6 +5,8 @@ import 'package:foodbridge_mobile/models/donation_model.dart';
 import 'package:foodbridge_mobile/models/reservation_model.dart';
 import 'package:foodbridge_mobile/models/pickup_model.dart';
 import 'package:foodbridge_mobile/models/organization_model.dart';
+import 'package:foodbridge_mobile/core/constants/india_constants.dart';
+import 'package:foodbridge_mobile/core/constants/api_constants.dart';
 
 void main() {
   group('Annadhara Model Unit Tests', () {
@@ -14,7 +16,7 @@ void main() {
         'name': 'Green Bistro',
         'email': 'donor@greenbistro.com',
         'role': 'DONOR',
-        'phone': '1234567890',
+        'phone': '9876543210',
         'organization': {
           'name': 'Green Garden Bistro',
           'type': 'Restaurant',
@@ -44,12 +46,13 @@ void main() {
       expect(recipient.role, 'RECIPIENT');
     });
 
-    test('DonationModel deserialization and field mapping', () {
+    test('DonationModel deserialization with Indian localization fields', () {
       final jsonDonation = {
         '_id': 'don123',
         'title': '30 Portions Veggie Curry',
-        'category': 'cooked_meals',
-        'description': 'Freshly prepared vegetarian curry with brown rice',
+        'category': 'rice_meals',
+        'dietaryType': 'veg',
+        'description': 'Freshly prepared vegetarian curry with rice',
         'totalQuantity': 30,
         'availableQuantity': 20,
         'reservedQuantity': 10,
@@ -57,10 +60,17 @@ void main() {
         'unit': 'meals',
         'storageHandling': 'hot_held',
         'allergens': ['dairy'],
+        'fssaiNumber': '11223344556677',
+        'fssaiDeclaration': true,
         'pickupLocation': {
           'address': {
             'street': '101 Market Lane',
-            'city': 'Metropolis',
+            'areaLocality': 'Indiranagar',
+            'city': 'Bengaluru',
+            'district': 'Bengaluru Urban',
+            'state': 'Karnataka',
+            'postalCode': '560038',
+            'country': 'India',
           },
         },
         'status': 'available',
@@ -72,12 +82,20 @@ void main() {
       final donation = DonationModel.fromJson(jsonDonation);
       expect(donation.id, 'don123');
       expect(donation.title, '30 Portions Veggie Curry');
-      expect(donation.category, 'cooked_meals');
+      expect(donation.category, 'rice_meals');
+      expect(donation.dietaryType, 'veg');
+      expect(donation.fssaiNumber, '11223344556677');
+      expect(donation.fssaiDeclaration, true);
       expect(donation.totalQuantity, 30.0);
       expect(donation.availableQuantity, 20.0);
       expect(donation.unit, 'meals');
       expect(donation.street, '101 Market Lane');
-      expect(donation.city, 'Metropolis');
+      expect(donation.areaLocality, 'Indiranagar');
+      expect(donation.city, 'Bengaluru');
+      expect(donation.district, 'Bengaluru Urban');
+      expect(donation.state, 'Karnataka');
+      expect(donation.postalCode, '560038');
+      expect(donation.country, 'India');
       expect(donation.allergens, ['dairy']);
       expect(donation.donorName, 'City Bistro');
     });
@@ -114,8 +132,8 @@ void main() {
         'donation': {'title': 'Fresh Artisan Bread', 'unit': 'boxes'},
         'reservation': {'requestedQuantity': 4},
         'status': 'assigned',
-        'pickupAddress': {'street': '44 Baker St', 'city': 'Metropolis'},
-        'deliveryAddress': {'street': '12 Hope Ave'},
+        'pickupAddress': {'street': '44 Baker St', 'city': 'Bengaluru'},
+        'deliveryAddress': {'street': '12 Hope Ave', 'city': 'Bengaluru'},
         'donor': {'name': 'Sunrise Bakery'},
         'recipient': {'name': 'Community Food Pantry'},
       };
@@ -133,20 +151,62 @@ void main() {
       final jsonOrg = {
         '_id': 'org1',
         'organizationName': 'Hope Harvest Foundation',
-        'organizationType': 'NGO',
+        'organizationType': 'Registered NGO',
         'registrationNumber': 'NGO-882190',
         'email': 'contact@hopeharvest.org',
-        'phone': '555-0199',
-        'address': {'street': '77 Charity Way', 'city': 'Metropolis'},
+        'phone': '9876543210',
+        'address': {'street': '77 Charity Way', 'city': 'Bengaluru'},
         'verificationStatus': 'PENDING',
       };
 
       final org = OrganizationModel.fromJson(jsonOrg);
       expect(org.id, 'org1');
       expect(org.name, 'Hope Harvest Foundation');
-      expect(org.type, 'NGO');
+      expect(org.type, 'Registered NGO');
       expect(org.verificationStatus, 'PENDING');
-      expect(org.city, 'Metropolis');
+      expect(org.city, 'Bengaluru');
+    });
+
+    test('IndiaConstants validation and formatting helpers', () {
+      // 28 states + 8 UTs = 36 total
+      expect(IndiaConstants.indianStates.length, 36);
+      expect(IndiaConstants.indianStates.contains('Karnataka'), true);
+      expect(IndiaConstants.indianStates.contains('Delhi'), true);
+
+      // Indian phone validation
+      expect(IndiaConstants.isValidIndianPhone('9876543210'), true);
+      expect(IndiaConstants.isValidIndianPhone('+919876543210'), true);
+      expect(IndiaConstants.isValidIndianPhone('+91 98765 43210'), true);
+
+      // PIN code validation
+      expect(IndiaConstants.isValidPINCode('560038'), true);
+      expect(IndiaConstants.isValidPINCode('110001'), true);
+      expect(IndiaConstants.isValidPINCode('012345'), false);
+
+      // Phone formatting
+      expect(IndiaConstants.formatIndianPhone('9876543210'), '+91 98765 43210');
+
+      // Currency formatting
+      expect(IndiaConstants.formatINR(150000), '₹1,50,000');
+      expect(IndiaConstants.formatINR(500), '₹500');
+
+      // Canonical Indian Food Categories
+      final categoryIds = IndiaConstants.foodCategories.map((c) => c['id']).toSet();
+      expect(categoryIds.contains('rice_meals'), true);
+      expect(categoryIds.contains('roti_chapati'), true);
+      expect(categoryIds.contains('idli_dosa'), true);
+      expect(categoryIds.contains('biryani'), true);
+    });
+
+    test('ApiConstants image URL resolver', () {
+      expect(ApiConstants.resolveImageUrl(null).startsWith('http'), true);
+      expect(ApiConstants.resolveImageUrl('').startsWith('http'), true);
+      expect(
+        ApiConstants.resolveImageUrl('https://example.com/pic.jpg'),
+        'https://example.com/pic.jpg',
+      );
+      final resolvedRelative = ApiConstants.resolveImageUrl('/uploads/donations/item.jpg');
+      expect(resolvedRelative.contains('/uploads/donations/item.jpg'), true);
     });
   });
 

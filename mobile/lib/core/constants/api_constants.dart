@@ -15,6 +15,30 @@ class ApiConstants {
     return 'http://localhost:5000/api';
   }
 
+  static String get serverRootUrl {
+    if (kIsWeb) {
+      return 'http://localhost:5000';
+    }
+    try {
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:5000';
+      }
+    } catch (_) {}
+    return 'http://localhost:5000';
+  }
+
+  static String resolveImageUrl(String? url) {
+    if (url == null || url.trim().isEmpty) {
+      return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+    }
+    final trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    final root = serverRootUrl;
+    return '$root${trimmed.startsWith('/') ? '' : '/'}$trimmed';
+  }
+
   // Auth endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
@@ -46,6 +70,9 @@ class ApiConstants {
 
   // Dashboard stats
   static const String dashboardStats = '/dashboard/stats';
+
+  // Upload
+  static const String uploadImage = '/upload/image';
 
   // Admin
   static const String adminOrganizations = '/admin/organizations';

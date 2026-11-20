@@ -14,6 +14,19 @@ const donationSchema = new mongoose.Schema(
       required: [true, 'Food category is required'],
       enum: {
         values: [
+          // India-specific categories
+          'rice_meals',
+          'roti_chapati',
+          'idli_dosa',
+          'biryani',
+          'snacks',
+          'bakery_items',
+          'fruits',
+          'vegetables',
+          'packaged_food',
+          'groceries',
+          'dairy_products',
+          // Core & legacy platform categories
           'cooked_meals',
           'bakery_grains',
           'produce_fresh',
@@ -26,6 +39,21 @@ const donationSchema = new mongoose.Schema(
         message: '{VALUE} is not a supported category',
       },
       index: true,
+    },
+    dietaryType: {
+      type: String,
+      enum: ['Vegetarian', 'Non-Vegetarian', 'Vegan', 'Other'],
+      default: 'Vegetarian',
+      index: true,
+    },
+    fssaiNumber: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    fssaiDeclaration: {
+      type: Boolean,
+      default: false,
     },
     description: {
       type: String,
@@ -55,21 +83,34 @@ const donationSchema = new mongoose.Schema(
     unit: {
       type: String,
       required: [true, 'Unit of measurement is required'],
-      enum: ['meals', 'kg', 'portions', 'boxes', 'liters', 'packs'],
+      enum: [
+        'meals',
+        'portions',
+        'plates',
+        'packs',
+        'packets',
+        'boxes',
+        'kg',
+        'g',
+        'litres',
+        'liters',
+        'ml',
+        'pieces',
+        'pcs',
+      ],
     },
     prepDateTime: {
       type: Date,
-      required: [true, 'Preparation date and time is required'],
+      default: Date.now,
     },
     expiryDateTime: {
       type: Date,
-      required: [true, 'Food consumption / expiry deadline is required'],
       index: true,
     },
     storageHandling: {
       type: String,
       required: [true, 'Storage and handling information is required'],
-      enum: ['room_temperature', 'refrigerated', 'frozen', 'hot_held'],
+      enum: ['room_temperature', 'refrigerated', 'frozen', 'hot_held', 'other'],
       default: 'room_temperature',
     },
     allergens: {
@@ -79,9 +120,12 @@ const donationSchema = new mongoose.Schema(
     pickupLocation: {
       address: {
         street: { type: String, required: true },
+        areaLocality: { type: String, default: '' },
         city: { type: String, required: true },
+        district: { type: String, default: '' },
         state: { type: String, default: '' },
         postalCode: { type: String, default: '' },
+        country: { type: String, default: 'India' },
       },
       location: {
         type: {

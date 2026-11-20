@@ -32,28 +32,44 @@ const seed = async () => {
 
     // 1. Admin
     const admin = new User({
-      name: 'Sarah Jenkins (Admin)',
+      name: 'Rajesh Raman (Admin)',
       email: 'admin@foodbridge.org',
       role: 'ADMIN',
       accountStatus: 'ACTIVE',
-      phone: '+1 (555) 019-2834',
+      phone: '+91 98765 01234',
       isVerified: true,
-      address: { street: '100 Metro Tower, Suite 400', city: 'Metropolis', state: 'NY', postalCode: '10001' },
-      location: { type: 'Point', coordinates: [-73.9851, 40.7488] },
+      address: {
+        street: '104, Seva Bhavan, MG Road',
+        areaLocality: 'Ashok Nagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560001',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.5946, 12.9716] },
     });
     admin.password = 'Admin@123';
     await admin.save();
 
     // 2. Donors
     const donor1 = new User({
-      name: 'Chef Marco Rossi',
+      name: 'Chef Vikram Mehta',
       email: 'donor@greengarden.com',
       role: 'DONOR',
       accountStatus: 'ACTIVE',
-      phone: '+1 (555) 349-8120',
+      phone: '+91 98765 34981',
       isVerified: true,
-      address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
-      location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
+      address: {
+        street: '42/1, 12th Main Road',
+        areaLocality: 'HAL 2nd Stage, Indiranagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560038',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.6412, 12.9719] },
     });
     donor1.password = 'Donor@123';
     await donor1.save();
@@ -61,11 +77,20 @@ const seed = async () => {
     const orgDonor1 = await Organization.create({
       organizationName: 'Green Garden Bistro',
       organizationType: 'Restaurant',
-      registrationNumber: 'REST-NY-84920',
+      registrationNumber: 'FSSAI-11224189000124',
+      fssaiNumber: '11224189000124',
       email: 'contact@greengarden.com',
-      phone: '+1 (555) 349-8120',
-      address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
-      location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
+      phone: '+91 98765 34981',
+      address: {
+        street: '42/1, 12th Main Road',
+        areaLocality: 'HAL 2nd Stage, Indiranagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560038',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.6412, 12.9719] },
       verificationStatus: 'VERIFIED',
       submittedAt: new Date(Date.now() - 30 * 24 * 3600 * 1000),
       reviewedAt: new Date(Date.now() - 29 * 24 * 3600 * 1000),
@@ -76,26 +101,43 @@ const seed = async () => {
     await donor1.save();
 
     const donor2 = new User({
-      name: 'Elena Rostova',
+      name: 'Priya Kulkarni',
       email: 'sunrise@bakery.com',
       role: 'DONOR',
       accountStatus: 'ACTIVE',
-      phone: '+1 (555) 882-9341',
+      phone: '+91 98765 88293',
       isVerified: true,
-      address: { street: '78 Bakery Square', city: 'Metropolis', state: 'NY', postalCode: '10014' },
-      location: { type: 'Point', coordinates: [-74.0048, 40.7335] },
+      address: {
+        street: '78, Commercial Street',
+        areaLocality: 'Tasker Town, Shivajinagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560001',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.6088, 12.9822] },
     });
     donor2.password = 'Donor@123';
     await donor2.save();
 
     const orgDonor2 = await Organization.create({
       organizationName: 'Sunrise Artisanal Bakery',
-      organizationType: 'Restaurant',
-      registrationNumber: 'BAKE-NY-19342',
+      organizationType: 'Bakery',
+      registrationNumber: 'FSSAI-11223344556688',
+      fssaiNumber: '11223344556688',
       email: 'orders@sunrisebakery.com',
-      phone: '+1 (555) 882-9341',
-      address: { street: '78 Bakery Square', city: 'Metropolis', state: 'NY', postalCode: '10014' },
-      location: { type: 'Point', coordinates: [-74.0048, 40.7335] },
+      phone: '+91 98765 88293',
+      address: {
+        street: '78, Commercial Street',
+        areaLocality: 'Tasker Town, Shivajinagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560001',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.6088, 12.9822] },
       verificationStatus: 'VERIFIED',
       submittedAt: new Date(Date.now() - 20 * 24 * 3600 * 1000),
       reviewedAt: new Date(Date.now() - 19 * 24 * 3600 * 1000),
@@ -107,26 +149,42 @@ const seed = async () => {
 
     // 3. Recipients (NGOs)
     const recipient1 = new User({
-      name: 'David Miller',
+      name: 'Suresh Kumar',
       email: 'ngo@hopeharvest.org',
       role: 'RECIPIENT',
       accountStatus: 'ACTIVE',
-      phone: '+1 (555) 431-7729',
+      phone: '+91 98765 43177',
       isVerified: true,
-      address: { street: '12 Community Ave', city: 'Metropolis', state: 'NY', postalCode: '10009' },
-      location: { type: 'Point', coordinates: [-73.9805, 40.7262] },
+      address: {
+        street: '12, Ananda Nilaya, 5th Cross',
+        areaLocality: 'Margosa Road, Malleshwaram',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560003',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.5713, 13.0031] },
     });
     recipient1.password = 'Recipient@123';
     await recipient1.save();
 
     const orgRecipient1 = await Organization.create({
-      organizationName: 'Hope Harvest Food Rescue',
-      organizationType: 'NGO',
-      registrationNumber: '501C3-89472',
+      organizationName: 'Hope Harvest Seva Trust',
+      organizationType: 'Registered NGO',
+      registrationNumber: 'KA-BLR-TRUST-2019-482',
       email: 'info@hopeharvest.org',
-      phone: '+1 (555) 431-7729',
-      address: { street: '12 Community Ave', city: 'Metropolis', state: 'NY', postalCode: '10009' },
-      location: { type: 'Point', coordinates: [-73.9805, 40.7262] },
+      phone: '+91 98765 43177',
+      address: {
+        street: '12, Ananda Nilaya, 5th Cross',
+        areaLocality: 'Margosa Road, Malleshwaram',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560003',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.5713, 13.0031] },
       verificationStatus: 'VERIFIED',
       submittedAt: new Date(Date.now() - 15 * 24 * 3600 * 1000),
       reviewedAt: new Date(Date.now() - 14 * 24 * 3600 * 1000),
@@ -138,28 +196,44 @@ const seed = async () => {
 
     // Recipient 2 (Pending verification for admin module demonstration)
     const recipient2 = new User({
-      name: 'Maria Santos',
+      name: 'Lakshmi Devi',
       email: 'care@communityfood.org',
       role: 'RECIPIENT',
       accountStatus: 'ACTIVE',
-      phone: '+1 (555) 672-1194',
+      phone: '+91 98765 67211',
       isVerified: false,
-      address: { street: '89 Haven Shelter Way', city: 'Metropolis', state: 'NY', postalCode: '10002' },
-      location: { type: 'Point', coordinates: [-73.992, 40.715] },
+      address: {
+        street: '89, Shanti Marg, 1st Block',
+        areaLocality: 'Dr. Rajkumar Road, Rajajinagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560010',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.5539, 12.9915] },
     });
     recipient2.password = 'Recipient@123';
     await recipient2.save();
 
     const orgRecipient2 = await Organization.create({
       organizationName: 'Community Care Shelter',
-      organizationType: 'Food Distribution Organization',
+      organizationType: 'Community Kitchen',
       registrationNumber: 'PENDING-REG-2026',
       email: 'contact@communitycare.org',
-      phone: '+1 (555) 672-1194',
-      address: { street: '89 Haven Shelter Way', city: 'Metropolis', state: 'NY', postalCode: '10002' },
-      location: { type: 'Point', coordinates: [-73.992, 40.715] },
+      phone: '+91 98765 67211',
+      address: {
+        street: '89, Shanti Marg, 1st Block',
+        areaLocality: 'Dr. Rajkumar Road, Rajajinagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560010',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.5539, 12.9915] },
       verificationStatus: 'PENDING',
-      verificationNotes: 'Submitted tax exempt proof. Awaiting certificate verification.',
+      verificationNotes: 'Submitted Trust Deed and NGO Darpan verification proof. Awaiting admin approval.',
       submittedAt: new Date(),
       createdBy: recipient2._id,
     });
@@ -168,27 +242,43 @@ const seed = async () => {
 
     // 4. Volunteers
     const volunteer1 = new User({
-      name: 'Alex Rivera',
+      name: 'Alex Rivera (Arjun)',
       email: 'alex@volunteer.org',
       role: 'VOLUNTEER',
       accountStatus: 'ACTIVE',
-      phone: '+1 (555) 728-4491',
+      phone: '+91 98765 72844',
       isVerified: true,
-      address: { street: '310 Hudson St', city: 'Metropolis', state: 'NY', postalCode: '10013' },
-      location: { type: 'Point', coordinates: [-74.006, 40.728] },
+      address: {
+        street: '310, 80 Feet Road',
+        areaLocality: '4th Block, Koramangala',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560034',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.6245, 12.9352] },
     });
     volunteer1.password = 'Volunteer@123';
     await volunteer1.save();
 
     const volunteer2 = new User({
-      name: 'Priya Sharma',
+      name: 'Priya Sharma (Ananya)',
       email: 'priya@volunteer.org',
       role: 'VOLUNTEER',
       accountStatus: 'ACTIVE',
-      phone: '+1 (555) 914-3829',
+      phone: '+91 98765 91438',
       isVerified: true,
-      address: { street: '55 5th Ave', city: 'Metropolis', state: 'NY', postalCode: '10003' },
-      location: { type: 'Point', coordinates: [-73.994, 40.735] },
+      address: {
+        street: '55, 5th Cross',
+        areaLocality: '3rd Block, Jayanagar',
+        city: 'Bengaluru',
+        district: 'Bengaluru Urban',
+        state: 'Karnataka',
+        postalCode: '560011',
+        country: 'India',
+      },
+      location: { type: 'Point', coordinates: [77.5833, 12.9298] },
     });
     volunteer2.password = 'Volunteer@123';
     await volunteer2.save();
@@ -202,10 +292,11 @@ const seed = async () => {
     const in48Hours = new Date(now.getTime() + 48 * 3600 * 1000);
 
     const donation1 = await Donation.create({
-      title: 'Nutritious Vegetable & Lentil Curry with Rice',
+      title: 'Nutritious Vegetable & Lentil Curry with Jeera Rice',
       category: 'cooked_meals',
+      dietaryType: 'Vegetarian',
       description:
-        'Prepared fresh today for an executive lunch event. Kept consistently at proper hot-holding temperature. Packaged in sanitized, heat-sealed aluminum catering containers.',
+        'Prepared fresh today for an executive lunch event. Kept consistently at proper hot-holding temperature (65°C). Packaged in sanitized, heat-sealed catering containers. FSSAI hygiene compliant.',
       totalQuantity: 40,
       availableQuantity: 30,
       reservedQuantity: 10,
@@ -214,10 +305,18 @@ const seed = async () => {
       prepDateTime: new Date(now.getTime() - 2 * 3600 * 1000),
       expiryDateTime: in6Hours,
       storageHandling: 'hot_held',
-      allergens: ['None reported'],
+      allergens: ['Dairy (Ghee)'],
       pickupLocation: {
-        address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
-        location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
+        address: {
+          street: '42/1, 12th Main Road',
+          areaLocality: 'HAL 2nd Stage, Indiranagar',
+          city: 'Bengaluru',
+          district: 'Bengaluru Urban',
+          state: 'Karnataka',
+          postalCode: '560038',
+          country: 'India',
+        },
+        location: { type: 'Point', coordinates: [77.6412, 12.9719] },
       },
       pickupStartTime: now,
       pickupEndTime: in6Hours,
@@ -226,13 +325,15 @@ const seed = async () => {
       donor: donor1._id,
       organization: orgDonor1._id,
       safetyGuidelinesAccepted: true,
+      fssaiNumber: '11224189000124',
     });
 
     const donation2 = await Donation.create({
-      title: 'Assorted Sourdough & Multigrain Artisan Breads',
+      title: 'Assorted Fresh Whole Wheat Roti & Pav Buns',
       category: 'bakery_grains',
+      dietaryType: 'Vegetarian',
       description:
-        'End-of-day surplus of daily baked sourdough loaves, baguettes, and multigrain batards. Baked this morning with organic flour.',
+        'End-of-day surplus of daily fresh-baked whole wheat rotis, chapattis, and soft pav buns. Baked this morning with 100% whole wheat chakki atta.',
       totalQuantity: 25,
       availableQuantity: 25,
       reservedQuantity: 0,
@@ -243,8 +344,16 @@ const seed = async () => {
       storageHandling: 'room_temperature',
       allergens: ['Gluten', 'Wheat'],
       pickupLocation: {
-        address: { street: '78 Bakery Square', city: 'Metropolis', state: 'NY', postalCode: '10014' },
-        location: { type: 'Point', coordinates: [-74.0048, 40.7335] },
+        address: {
+          street: '78, Commercial Street',
+          areaLocality: 'Tasker Town, Shivajinagar',
+          city: 'Bengaluru',
+          district: 'Bengaluru Urban',
+          state: 'Karnataka',
+          postalCode: '560001',
+          country: 'India',
+        },
+        location: { type: 'Point', coordinates: [77.6088, 12.9822] },
       },
       pickupStartTime: now,
       pickupEndTime: in12Hours,
@@ -253,13 +362,15 @@ const seed = async () => {
       donor: donor2._id,
       organization: orgDonor2._id,
       safetyGuidelinesAccepted: true,
+      fssaiNumber: '11223344556688',
     });
 
     const donation3 = await Donation.create({
-      title: 'Fresh Organic Apples, Bananas & Crisp Greens',
+      title: 'Fresh Organic Apples, Bananas & Seasonal Greens',
       category: 'produce_fresh',
+      dietaryType: 'Vegetarian',
       description:
-        'Surplus fresh farm delivery from local co-op growers. Clean, wholesome, and ready for immediate consumption or salad distribution.',
+        'Surplus fresh farm delivery from local Karnataka organic co-op growers. Clean, wholesome, and ready for immediate community distribution.',
       totalQuantity: 50,
       availableQuantity: 50,
       reservedQuantity: 0,
@@ -270,8 +381,16 @@ const seed = async () => {
       storageHandling: 'refrigerated',
       allergens: ['None'],
       pickupLocation: {
-        address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
-        location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
+        address: {
+          street: '42/1, 12th Main Road',
+          areaLocality: 'HAL 2nd Stage, Indiranagar',
+          city: 'Bengaluru',
+          district: 'Bengaluru Urban',
+          state: 'Karnataka',
+          postalCode: '560038',
+          country: 'India',
+        },
+        location: { type: 'Point', coordinates: [77.6412, 12.9719] },
       },
       pickupStartTime: now,
       pickupEndTime: in24Hours,
@@ -280,12 +399,14 @@ const seed = async () => {
       donor: donor1._id,
       organization: orgDonor1._id,
       safetyGuidelinesAccepted: true,
+      fssaiNumber: '11224189000124',
     });
 
     const donation4 = await Donation.create({
-      title: 'Roasted Herb Chicken & Steamed Quinoa Bowls',
+      title: 'Steamed Idli, Medu Vada & Sambar Meal Packs',
       category: 'cooked_meals',
-      description: 'Surplus buffet banquet dinners, fully packaged in eco-friendly meal cartons.',
+      dietaryType: 'Vegetarian',
+      description: 'Surplus breakfast banquet meal packs, hygienically sealed in eco-friendly meal cartons with coconut chutney.',
       totalQuantity: 30,
       availableQuantity: 0,
       reservedQuantity: 0,
@@ -294,10 +415,18 @@ const seed = async () => {
       prepDateTime: new Date(now.getTime() - 26 * 3600 * 1000),
       expiryDateTime: new Date(now.getTime() - 12 * 3600 * 1000),
       storageHandling: 'refrigerated',
-      allergens: ['None reported'],
+      allergens: ['Mustard', 'Coconut'],
       pickupLocation: {
-        address: { street: '425 Garden Way', city: 'Metropolis', state: 'NY', postalCode: '10012' },
-        location: { type: 'Point', coordinates: [-73.9912, 40.7258] },
+        address: {
+          street: '42/1, 12th Main Road',
+          areaLocality: 'HAL 2nd Stage, Indiranagar',
+          city: 'Bengaluru',
+          district: 'Bengaluru Urban',
+          state: 'Karnataka',
+          postalCode: '560038',
+          country: 'India',
+        },
+        location: { type: 'Point', coordinates: [77.6412, 12.9719] },
       },
       pickupStartTime: new Date(now.getTime() - 20 * 3600 * 1000),
       pickupEndTime: new Date(now.getTime() - 14 * 3600 * 1000),
@@ -306,6 +435,7 @@ const seed = async () => {
       donor: donor1._id,
       organization: orgDonor1._id,
       safetyGuidelinesAccepted: true,
+      fssaiNumber: '11224189000124',
     });
 
     console.log('[Seed] Creating Reservations & Handover records...');

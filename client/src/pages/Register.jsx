@@ -14,21 +14,25 @@ import {
   EyeOff,
   ArrowRight,
   MapPin,
+  FileCheck2,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import {
+  INDIAN_STATES,
+  DONOR_ORGANIZATION_TYPES,
+  RECIPIENT_ORGANIZATION_TYPES,
+  VOLUNTEER_TYPES,
+  isValidIndianPhone,
+  isValidPINCode,
+  FOOD_SAFETY_DISCLAIMER,
+} from '../constants/india';
 
 const normalizeInitialRole = (raw) => {
   const value = (raw || '').trim().toLowerCase();
   if (value === 'recipient' || value === 'recipient_ngo') return 'recipient';
   if (value === 'volunteer') return 'volunteer';
   return 'donor';
-};
-
-const isValidPhoneInput = (value) => {
-  const trimmed = value.trim();
-  if (!/^[+\d][\d\s().-]{6,19}$/.test(trimmed)) return false;
-  const digits = trimmed.replace(/\D/g, '');
-  return digits.length >= 7 && digits.length <= 15;
 };
 
 export const Register = () => {
@@ -47,12 +51,18 @@ export const Register = () => {
   // Organization fields
   const [organizationName, setOrganizationName] = useState('');
   const [organizationType, setOrganizationType] = useState(
-    initialRole === 'recipient' ? 'NGO' : 'Restaurant'
+    initialRole === 'recipient' ? 'Registered NGO' : 'Restaurant'
   );
+  const [volunteerType, setVolunteerType] = useState('Individual Volunteer');
   const [registrationNumber, setRegistrationNumber] = useState('');
+  const [fssaiNumber, setFssaiNumber] = useState('');
+
+  // Indian Address fields
   const [street, setStreet] = useState('');
+  const [areaLocality, setAreaLocality] = useState('');
   const [city, setCity] = useState('');
-  const [state, setState] = useState('');
+  const [district, setDistrict] = useState('');
+  const [state, setState] = useState('Karnataka');
   const [postalCode, setPostalCode] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -73,7 +83,7 @@ export const Register = () => {
     setError('');
     setFieldErrors({});
     if (newRole === 'donor') setOrganizationType('Restaurant');
-    if (newRole === 'recipient') setOrganizationType('NGO');
+    if (newRole === 'recipient') setOrganizationType('Registered NGO');
   };
 
   const validateForm = () => {
@@ -81,34 +91,36 @@ export const Register = () => {
     const requiresOrg = role === 'donor' || role === 'recipient';
 
     if (!name.trim()) {
-      errors.name = 'Full name is required';
+      errors.name = 'Full name / Contact person is required';
     }
     if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
       errors.email = 'Please enter a valid email address';
     }
+
     if (requiresOrg && !phone.trim()) {
       errors.phone = 'Contact phone number is required for organization registration';
-    } else if (phone.trim() && !isValidPhoneInput(phone)) {
-      errors.phone = 'Please enter a valid phone number (7 to 15 digits)';
+    } else if (phone.trim() && !isValidIndianPhone(phone)) {
+      errors.phone = 'Please enter a valid 10-digit Indian mobile or landline number';
     }
+
     if (!password || password.length < 6) {
       errors.password = 'Password must be at least 6 characters long';
     }
 
     if (requiresOrg) {
       if (!organizationName.trim()) {
-        errors.organizationName = 'Organization name is required';
+        errors.organizationName = 'Organization / Business name is required';
       }
       if (!city.trim()) {
-        errors.city = 'City is required';
+        errors.city = 'Village / Town / City is required';
       }
       if (!state.trim()) {
-        errors.state = 'State is required';
+        errors.state = 'State / Union Territory is required';
       }
       if (!postalCode.trim()) {
-        errors.postalCode = 'Postal code / pincode is required';
-      } else if (!/^[A-Za-z0-9\s-]{4,10}$/.test(postalCode.trim())) {
-        errors.postalCode = 'Please enter a valid postal code / pincode';
+        errors.postalCode = '6-digit PIN code is required';
+      } else if (!isValidPINCode(postalCode)) {
+        errors.postalCode = 'Please enter a valid 6-digit Indian PIN code (e.g. 560001)';
       }
     }
 
@@ -139,9 +151,12 @@ export const Register = () => {
         phone: phone.trim(),
         address: {
           street: street.trim(),
+          areaLocality: areaLocality.trim(),
           city: city.trim(),
+          district: district.trim(),
           state: state.trim(),
           postalCode: postalCode.trim(),
+          country: 'India',
         },
       };
 
@@ -151,13 +166,11 @@ export const Register = () => {
         if (registrationNumber.trim()) {
           payload.registrationNumber = registrationNumber.trim();
         }
-      }
-
-      if (import.meta.env.DEV) {
-        console.debug('[Annadhara][Register] Submitting registration payload:', {
-          ...payload,
-          password: '[REDACTED]',
-        });
+        if (fssaiNumber.trim()) {
+          payload.fssaiNumber = fssaiNumber.trim();
+        }
+      } else {
+        payload.volunteerType = volunteerType;
       }
 
       const user = await register(payload);
@@ -173,33 +186,41 @@ export const Register = () => {
     } catch (err) {
       if (!err.response) {
         setError(
-          err.message && err.message !== 'Network Error'
-            ? err.message
-            : 'Unable to reach the Annadhara server. Please ensure the backend service is running and try again.'
+          'Network connection error. Please verify the backend API server is running at http://localhost:5000'
         );
         return;
       }
 
-      const data = err.response.data;
-      if (data && typeof data === 'object') {
-        if (Array.isArray(data.errors) && data.errors.length > 0) {
-          const mappedErrors = {};
-          data.errors.forEach((item) => {
-            if (!item?.field) return;
-            const cleanField = item.field.replace(/^address\./, '');
-            mappedErrors[cleanField] = item.message;
-          });
-          setFieldErrors(mappedErrors);
-        }
+      const resp = err.response.data;
 
-        if (data.message) {
-          setError(data.message);
-          return;
-        }
+      if (resp && resp.errors && Array.isArray(resp.errors)) {
+        const mappedErrors = {};
+        resp.errors.forEach((e) => {
+          if (e.field) mappedErrors[e.field] = e.message;
+        });
+        setFieldErrors(mappedErrors);
+      }
+
+      if (err.response.status === 409) {
+        setError('An account with this email address already exists. Please log in instead.');
+        return;
+      }
+
+      if (err.response.status === 422) {
+        setError(
+          resp.message ||
+            'Organization validation failed. Please check the organization type and contact details.'
+        );
+        return;
+      }
+
+      if (resp && resp.message) {
+        setError(resp.message);
+        return;
       }
 
       setError(
-        `Registration request failed (HTTP ${err.response.status}). Please verify the backend API server is running and try again.`
+        `Registration request failed (HTTP ${err.response.status}). Please check your inputs and try again.`
       );
     } finally {
       setLoading(false);
@@ -213,7 +234,7 @@ export const Register = () => {
           <HeartHandshake className="w-7 h-7" />
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[#26332D] tracking-tight">Create your Account</h2>
-        <p className="text-xs sm:text-sm text-[#718078]">Join the Annadhara Surplus Rescue Network • Team Seva Shakti</p>
+        <p className="text-xs sm:text-sm text-[#718078]">Join the Annadhara Food Rescue Network • Team Seva Shakti (India)</p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-xl">
@@ -242,7 +263,7 @@ export const Register = () => {
               >
                 <Building className="w-5 h-5" />
                 <span>Food Donor</span>
-                <span className="text-[10px] opacity-80 font-normal">Restaurant / Hotel</span>
+                <span className="text-[10px] opacity-80 font-normal">Restaurant / Canteen</span>
               </button>
 
               <button
@@ -256,7 +277,7 @@ export const Register = () => {
               >
                 <ShieldCheck className="w-5 h-5" />
                 <span>Recipient NGO</span>
-                <span className="text-[10px] opacity-80 font-normal">Shelter / Kitchen</span>
+                <span className="text-[10px] opacity-80 font-normal">Trust / Shelter Home</span>
               </button>
 
               <button
@@ -270,13 +291,13 @@ export const Register = () => {
               >
                 <Truck className="w-5 h-5" />
                 <span>Volunteer</span>
-                <span className="text-[10px] opacity-80 font-normal">Rescue Transport</span>
+                <span className="text-[10px] opacity-80 font-normal">Pickup & Delivery</span>
               </button>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Personal Details */}
+            {/* Personal / Contact Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#26332D] mb-1.5">
@@ -294,7 +315,7 @@ export const Register = () => {
                       clearFieldError('name');
                     }}
                     required
-                    placeholder="e.g. Elena Rostova"
+                    placeholder="e.g. Vikram Mehta"
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${
                       fieldErrors.name ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-sm text-[#26332D] placeholder-[#718078] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B] transition-all`}
@@ -307,11 +328,11 @@ export const Register = () => {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#26332D] mb-1.5">
-                  {role !== 'volunteer' ? 'Contact Phone *' : 'Contact Phone (Optional)'}
+                  {role !== 'volunteer' ? 'Mobile / Contact Phone *' : 'Mobile Number (Optional)'}
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#718078]">
-                    <Phone className="w-4 h-4" />
+                <div className="relative flex">
+                  <div className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-[#E3EAE5] bg-stone-100 text-xs font-bold text-[#26332D]">
+                    🇮🇳 +91
                   </div>
                   <input
                     type="tel"
@@ -321,8 +342,8 @@ export const Register = () => {
                       clearFieldError('phone');
                     }}
                     required={role !== 'volunteer'}
-                    placeholder="e.g. +91 9876543210"
-                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${
+                    placeholder="98765 43210"
+                    className={`w-full pl-3 pr-4 py-2.5 rounded-r-xl border ${
                       fieldErrors.phone ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-sm text-[#26332D] placeholder-[#718078] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B] transition-all`}
                   />
@@ -350,7 +371,7 @@ export const Register = () => {
                       clearFieldError('email');
                     }}
                     required
-                    placeholder="name@organization.com"
+                    placeholder="name@organization.org"
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${
                       fieldErrors.email ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-sm text-[#26332D] placeholder-[#718078] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B] transition-all`}
@@ -397,17 +418,44 @@ export const Register = () => {
               </div>
             </div>
 
-            {/* Organization Specific Section */}
+            {/* Volunteer Type Selection */}
+            {role === 'volunteer' && (
+              <div className="pt-3 border-t border-[#E3EAE5] space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#26332D]">
+                  Volunteer Category
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {VOLUNTEER_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setVolunteerType(type)}
+                      className={`p-2.5 rounded-xl text-xs font-bold text-left transition-all ${
+                        volunteerType === type
+                          ? 'bg-[#EAF4EE] text-[#205B43] border border-[#2E7D5B]'
+                          : 'bg-[#F8FAF8] text-[#718078] border border-[#E3EAE5]'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Organization Specific Section (Donor / Recipient) */}
             {role !== 'volunteer' && (
               <div className="pt-3 border-t border-[#E3EAE5] space-y-4">
                 <p className="text-xs font-bold text-[#205B43] flex items-center space-x-1.5">
                   <Building className="w-4 h-4" />
-                  <span>Organization Information</span>
+                  <span>Indian Organization / Entity Details</span>
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#26332D] mb-1">Organization Name *</label>
+                    <label className="block text-xs font-bold text-[#26332D] mb-1">
+                      {role === 'donor' ? 'Business / Restaurant Name *' : 'NGO / Shelter / Trust Name *'}
+                    </label>
                     <input
                       type="text"
                       value={organizationName}
@@ -416,7 +464,7 @@ export const Register = () => {
                         clearFieldError('organizationName');
                       }}
                       required
-                      placeholder={role === 'donor' ? 'e.g. Green Garden Bistro' : 'e.g. City Hope Shelter'}
+                      placeholder={role === 'donor' ? 'e.g. Green Garden Bistro' : 'e.g. Hope Harvest Seva Trust'}
                       className={`w-full px-3.5 py-2.5 rounded-xl border ${
                         fieldErrors.organizationName ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                       } bg-[#F8FAF8] text-sm text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]`}
@@ -427,7 +475,7 @@ export const Register = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#26332D] mb-1">Organization Type *</label>
+                    <label className="block text-xs font-bold text-[#26332D] mb-1">Organization Category *</label>
                     <select
                       value={organizationType}
                       onChange={(e) => {
@@ -438,21 +486,17 @@ export const Register = () => {
                         fieldErrors.organizationType ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                       } bg-[#F8FAF8] text-sm text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]`}
                     >
-                      {role === 'donor' ? (
-                        <>
-                          <option value="Restaurant">Restaurant</option>
-                          <option value="Hotel">Hotel</option>
-                          <option value="College Canteen">College Canteen</option>
-                          <option value="Event Organizer">Event Organizer</option>
-                          <option value="Other">Other Food Producer</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="NGO">NGO / Charity</option>
-                          <option value="Food Distribution Organization">Food Bank / Pantry</option>
-                          <option value="Other">Shelter / Community Kitchen</option>
-                        </>
-                      )}
+                      {role === 'donor'
+                        ? DONOR_ORGANIZATION_TYPES.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))
+                        : RECIPIENT_ORGANIZATION_TYPES.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
                     </select>
                     {fieldErrors.organizationType && (
                       <p className="text-[11px] text-[#D9534F] mt-1">{fieldErrors.organizationType}</p>
@@ -460,42 +504,88 @@ export const Register = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[#26332D] mb-1">Registration / Tax ID (Optional)</label>
-                  <input
-                    type="text"
-                    value={registrationNumber}
-                    onChange={(e) => setRegistrationNumber(e.target.value)}
-                    placeholder="e.g. 501(c)(3) or City Business License"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] text-sm text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#26332D] mb-1">
+                      {role === 'donor' ? 'Trade / GST / Registration Number' : 'NGO Darpan / Trust Reg. Number'} (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={registrationNumber}
+                      onChange={(e) => setRegistrationNumber(e.target.value)}
+                      placeholder={role === 'donor' ? 'e.g. GSTIN or Municipal License' : 'e.g. KA/2021/012345'}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] text-sm text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
+                    />
+                  </div>
+
+                  {role === 'donor' && (
+                    <div>
+                      <label className="block text-xs font-bold text-[#26332D] mb-1 flex items-center justify-between">
+                        <span>FSSAI Registration / License No.</span>
+                        <span className="text-[10px] text-[#718078] font-normal">Optional</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={fssaiNumber}
+                        onChange={(e) => setFssaiNumber(e.target.value)}
+                        placeholder="14-digit FSSAI Number"
+                        maxLength={14}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] text-sm text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Address Information */}
+            {/* Indian Address System Section */}
             <div className="pt-3 border-t border-[#E3EAE5] space-y-3">
-              <p className="text-xs font-bold text-[#718078] flex items-center space-x-1.5">
-                <MapPin className="w-4 h-4 text-[#2E7D5B]" />
-                <span>
-                  {role !== 'volunteer'
-                    ? 'Primary Location / Pickup Address'
-                    : 'Location Details (Optional)'}
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-[#205B43] flex items-center space-x-1.5">
+                  <MapPin className="w-4 h-4 text-[#2E7D5B]" />
+                  <span>
+                    {role !== 'volunteer'
+                      ? 'Location / Address (India)'
+                      : 'Residential / Operational Area (Optional)'}
+                  </span>
+                </p>
+                <span className="text-[11px] font-bold text-[#2E7D5B] bg-[#EAF4EE] px-2 py-0.5 rounded-md">
+                  Country: India (Default)
                 </span>
-              </p>
-
-              <div>
-                <input
-                  type="text"
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                  placeholder="Street Address (Optional, e.g. 425 Garden Way)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] text-sm text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
-                />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
+                  <label className="block text-[11px] font-bold text-[#26332D] mb-1">
+                    House / Building / Street
+                  </label>
+                  <input
+                    type="text"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    placeholder="e.g. 42/1, 12th Main Road"
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] text-xs text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#26332D] mb-1">
+                    Area / Locality
+                  </label>
+                  <input
+                    type="text"
+                    value={areaLocality}
+                    onChange={(e) => setAreaLocality(e.target.value)}
+                    placeholder="e.g. Indiranagar, Koramangala"
+                    className="w-full px-3.5 py-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] text-xs text-[#26332D] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#26332D] mb-1">
+                    Village / Town / City *
+                  </label>
                   <input
                     type="text"
                     value={city}
@@ -504,51 +594,86 @@ export const Register = () => {
                       clearFieldError('city');
                     }}
                     required={role !== 'volunteer'}
-                    placeholder={role !== 'volunteer' ? 'City *' : 'City'}
+                    placeholder="e.g. Bengaluru"
                     className={`w-full px-3 py-2 rounded-xl border ${
                       fieldErrors.city ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-xs text-[#26332D]`}
                   />
                   {fieldErrors.city && (
-                    <p className="text-[11px] text-[#D9534F] mt-1">{fieldErrors.city}</p>
+                    <p className="text-[10px] text-[#D9534F] mt-1">{fieldErrors.city}</p>
                   )}
                 </div>
+
                 <div>
+                  <label className="block text-[11px] font-bold text-[#26332D] mb-1">
+                    District
+                  </label>
                   <input
                     type="text"
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    placeholder="e.g. Bengaluru Urban"
+                    className="w-full px-3 py-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] text-xs text-[#26332D]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#26332D] mb-1">
+                    State / UT *
+                  </label>
+                  <select
                     value={state}
                     onChange={(e) => {
                       setState(e.target.value);
                       clearFieldError('state');
                     }}
                     required={role !== 'volunteer'}
-                    placeholder={role !== 'volunteer' ? 'State *' : 'State'}
-                    className={`w-full px-3 py-2 rounded-xl border ${
+                    className={`w-full px-2.5 py-2 rounded-xl border ${
                       fieldErrors.state ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-xs text-[#26332D]`}
-                  />
+                  >
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
                   {fieldErrors.state && (
-                    <p className="text-[11px] text-[#D9534F] mt-1">{fieldErrors.state}</p>
+                    <p className="text-[10px] text-[#D9534F] mt-1">{fieldErrors.state}</p>
                   )}
                 </div>
+
                 <div>
+                  <label className="block text-[11px] font-bold text-[#26332D] mb-1">
+                    PIN Code (6 Digits) *
+                  </label>
                   <input
                     type="text"
+                    maxLength={6}
                     value={postalCode}
                     onChange={(e) => {
                       setPostalCode(e.target.value);
                       clearFieldError('postalCode');
                     }}
                     required={role !== 'volunteer'}
-                    placeholder={role !== 'volunteer' ? 'Postal Code *' : 'Postal Code'}
+                    placeholder="e.g. 560038"
                     className={`w-full px-3 py-2 rounded-xl border ${
                       fieldErrors.postalCode ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-xs text-[#26332D]`}
                   />
                   {fieldErrors.postalCode && (
-                    <p className="text-[11px] text-[#D9534F] mt-1">{fieldErrors.postalCode}</p>
+                    <p className="text-[10px] text-[#D9534F] mt-1">{fieldErrors.postalCode}</p>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Food Safety Advisory Note */}
+            <div className="p-3 bg-[#EAF4EE]/60 rounded-xl border border-[#2E7D5B]/20 flex items-start space-x-2 text-[11px] text-[#205B43]">
+              <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#2E7D5B]" />
+              <div>
+                <span className="font-bold">Indian Food Safety Note: </span>
+                {FOOD_SAFETY_DISCLAIMER}
               </div>
             </div>
 
@@ -560,11 +685,11 @@ export const Register = () => {
               {loading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Registering Account...</span>
+                  <span>Registering Account in India...</span>
                 </>
               ) : (
                 <>
-                  <span>Create Account & Join</span>
+                  <span>Create Account & Join Network</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

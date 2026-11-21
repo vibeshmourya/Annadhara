@@ -339,6 +339,7 @@ async function runAtlasTests() {
   if (passed !== total) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runAtlasTests().catch((err) => {

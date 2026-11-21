@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { getDbStatus, connectDB } = require('./config/db');
+const { getDbStatus, connectDB, getDbDiagnostics } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
 // Route imports
@@ -129,7 +129,7 @@ app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
  * Non-blocking for root / health check requests so status can always be reported.
  */
 app.use(async (req, res, next) => {
-  const isBypassPath =
+  const isInfoPath =
     req.path === '/' ||
     req.path === '/api' ||
     req.path === '/api/health' ||
@@ -141,14 +141,20 @@ app.use(async (req, res, next) => {
     next();
   } catch (err) {
     console.error('[Serverless Database Middleware Error]:', err.message);
-    if (isBypassPath) {
+    if (isInfoPath) {
       return next();
     }
+    const diag = getDbDiagnostics();
     return res.status(503).json({
       success: false,
       message: 'Database service is currently unavailable. Please verify MongoDB Atlas network whitelist (0.0.0.0/0) and credentials.',
       database: getDbStatus(),
-      error: process.env.NODE_ENV === 'production' ? undefined : err.message,
+      diagnostics: {
+        envConfigured: diag.envConfigured,
+        cluster: diag.clusterHost,
+        database: diag.dbName,
+        reason: diag.lastError || err.message,
+      },
     });
   }
 });
@@ -156,15 +162,39 @@ app.use(async (req, res, next) => {
 /**
  * Root & Base API Info Endpoints
  * GET / and GET /api
- * Prevents 404 on base URL visits and informs client of available endpoints.
+ * Prevents 404 on base URL visits, connects to DB, and informs client of available endpoints.
  */
-app.get(['/', '/api'], (req, res) => {
+app.get(['/', '/api'], async (req, res) => {
+  if (getDbStatus() !== 'connected') {
+    try { await connectDB(); } catch (_) {}
+  }
+
   const dbStatus = getDbStatus();
+  const isConnected = dbStatus === 'connected';
+  const diag = getDbDiagnostics();
+
   res.status(200).json({
     success: true,
     message: 'Annadhara API is running',
-    status: 'online',
+    status: isConnected ? 'online' : 'degraded',
     database: dbStatus,
+    ...(isConnected
+      ? {
+          databaseDetails: {
+            type: diag.isAtlas ? 'MongoDB Atlas (Cloud)' : 'MongoDB (Custom)',
+            cluster: diag.clusterHost,
+            database: diag.dbName,
+          },
+        }
+      : {
+          diagnostics: {
+            envConfigured: diag.envConfigured,
+            envVariable: diag.envVariableDetected,
+            cluster: diag.clusterHost,
+            reason: diag.lastError,
+            recommendations: diag.recommendations,
+          },
+        }),
     version: '1.0.0',
     tagline: 'Surplus Food. Shared Hope. Zero Waste.',
     endpoints: {
@@ -186,16 +216,39 @@ app.get(['/', '/api'], (req, res) => {
 /**
  * Health check endpoint
  * GET /api/health and GET /health
- * Returns: API status, live MongoDB Atlas database connection status, server timestamp
+ * Returns: API status, live MongoDB Atlas database connection status, server timestamp, and safe diagnostics
  */
-app.get(['/api/health', '/health'], (req, res) => {
+app.get(['/api/health', '/health'], async (req, res) => {
+  if (getDbStatus() !== 'connected') {
+    try { await connectDB(); } catch (_) {}
+  }
+
   const dbStatus = getDbStatus();
   const isHealthy = dbStatus === 'connected';
+  const diag = getDbDiagnostics();
+
   res.status(isHealthy ? 200 : 503).json({
     success: isHealthy,
-    message: 'Annadhara API is running',
-    database: dbStatus,
+    message: isHealthy ? 'Annadhara API is running' : 'Annadhara API is degraded (database unavailable)',
     status: isHealthy ? 'online' : 'degraded',
+    database: dbStatus,
+    ...(isHealthy
+      ? {
+          databaseDetails: {
+            type: diag.isAtlas ? 'MongoDB Atlas (Cloud)' : 'MongoDB (Custom)',
+            cluster: diag.clusterHost,
+            database: diag.dbName,
+          },
+        }
+      : {
+          diagnostics: {
+            envConfigured: diag.envConfigured,
+            envVariable: diag.envVariableDetected,
+            cluster: diag.clusterHost,
+            reason: diag.lastError,
+            recommendations: diag.recommendations,
+          },
+        }),
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });

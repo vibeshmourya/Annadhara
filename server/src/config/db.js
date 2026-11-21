@@ -1,11 +1,39 @@
 const mongoose = require('mongoose');
 
+/**
+ * Global cache for Mongoose connection in Vercel Serverless / AWS Lambda environments.
+ * Prevents redundant connection handshakes and socket exhaustion across serverless invocations.
+ */
+let cached = global.__annadhara_mongoose;
+if (!cached) {
+  cached = global.__annadhara_mongoose = {
+    conn: null,
+    promise: null,
+    lastError: null,
+    envVarName: null,
+  };
+}
+
 let mongodInstance = null;
-let connectingPromise = null;
+
+/**
+ * Supported environment variable names for MongoDB connection string.
+ * Checks MONGODB_URI first, then common aliases.
+ */
+const getMongoConfig = () => {
+  const envKeys = ['MONGODB_URI', 'MONGO_URI', 'DATABASE_URL', 'MONGODB_URL', 'MONGO_URL'];
+  for (const key of envKeys) {
+    const val = process.env[key];
+    if (val && typeof val === 'string' && val.trim().length > 0) {
+      return { uri: val.trim(), key };
+    }
+  }
+  return { uri: '', key: null };
+};
 
 /**
  * Sanitizes a MongoDB connection URI by redacting user credentials
- * so passwords and secrets are never exposed in terminal or log files.
+ * so passwords and secrets are never exposed in terminal, responses, or log files.
  */
 const sanitizeMongoUri = (uri) => {
   if (!uri || typeof uri !== 'string') return '';
@@ -16,7 +44,7 @@ const sanitizeMongoUri = (uri) => {
 };
 
 /**
- * Extracts connection metadata for clean diagnostic logging
+ * Extracts connection metadata for clean diagnostic logging and health responses
  */
 const getDbDetails = (uri) => {
   if (!uri || typeof uri !== 'string') {
@@ -26,10 +54,13 @@ const getDbDetails = (uri) => {
   const sanitized = sanitizeMongoUri(uri);
   const match = uri.match(/@([^/?]+)(?:\/([^?]+))?/);
   const host = match ? match[1] : (uri.match(/:\/\/([^/?]+)/) ? uri.match(/:\/\/([^/?]+)/)[1] : 'unknown');
-  const dbName = match && match[2] ? match[2].split('?')[0] : (mongoose.connection.name || 'foodbridge');
+  const dbName = match && match[2] ? match[2].split('?')[0] : (mongoose.connection.name || 'annadhara');
   return { isAtlas, sanitized, host, dbName };
 };
 
+/**
+ * Current connection state as a clean string
+ */
 const getDbStatus = () => {
   const states = {
     0: 'disconnected',
@@ -41,67 +72,104 @@ const getDbStatus = () => {
 };
 
 /**
+ * Diagnostic reporting for API health and troubleshooting without exposing credentials
+ */
+const getDbDiagnostics = () => {
+  const { uri, key } = getMongoConfig();
+  const details = getDbDetails(uri);
+  const status = getDbStatus();
+
+  return {
+    status,
+    connected: status === 'connected',
+    isAtlas: details.isAtlas,
+    clusterHost: details.host,
+    dbName: details.dbName,
+    envConfigured: Boolean(uri),
+    envVariableDetected: key || null,
+    lastError: cached.lastError ? sanitizeMongoUri(cached.lastError) : null,
+    recommendations: status !== 'connected'
+      ? [
+          !uri ? 'Add MONGODB_URI in Vercel Project Settings -> Environment Variables.' : null,
+          details.isAtlas ? 'In MongoDB Atlas -> Network Access, ensure 0.0.0.0/0 (Allow Access from Anywhere) is active.' : null,
+          details.isAtlas ? 'In MongoDB Atlas -> Database Access, verify the username & password are valid.' : null,
+          'After updating environment variables in Vercel, trigger a Redeploy in the Deployments tab.',
+        ].filter(Boolean)
+      : [],
+  };
+};
+
+/**
  * Connect to MongoDB Atlas Cloud Database with serverless connection pooling & reuse
- * Uses environment variable MONGODB_URI (or MONGO_URI fallback)
  */
 const connectDB = async () => {
   // 1. If connection is already open (readyState === 1), reuse it immediately
   if (mongoose.connection.readyState === 1) {
-    return mongoose.connection;
+    cached.conn = mongoose.connection;
+    cached.lastError = null;
+    return cached.conn;
   }
 
   // 2. If a connection attempt is currently in-flight (readyState === 2), await the existing promise
-  if (mongoose.connection.readyState === 2 && connectingPromise) {
-    return connectingPromise;
+  if (mongoose.connection.readyState === 2 && cached.promise) {
+    return cached.promise;
   }
 
-  // 3. Identify configured URI (prioritize MONGODB_URI, fallback to MONGO_URI)
-  const configuredUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  // 3. Resolve MongoDB URI from supported environment variables
+  const { uri, key } = getMongoConfig();
+  cached.envVarName = key;
 
   // 4. Serverless + Atlas-optimized Mongoose connection options
   const mongooseOptions = {
-    serverSelectionTimeoutMS: 15000, // 15 seconds allows Atlas DNS SRV resolution and TLS handshake
+    serverSelectionTimeoutMS: 10000, // 10 seconds for Atlas DNS SRV resolution and TLS handshake
     socketTimeoutMS: 45000,
-    connectTimeoutMS: 15000,
-    maxPoolSize: 10, // Optimized for serverless lambdas to prevent exhausting Atlas pool
-    minPoolSize: 1,
-    family: 4, // Force IPv4 to prevent IPv6 routing delays
+    connectTimeoutMS: 10000,
+    maxPoolSize: 10,  // Maximum 10 connections per serverless container
+    minPoolSize: 0,   // Crucial for Serverless: Never hold idle sockets open across container freeze
   };
 
   const isServerlessOrProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 
-  if (configuredUri) {
-    const details = getDbDetails(configuredUri);
+  if (uri) {
+    const details = getDbDetails(uri);
     try {
-      if (!connectingPromise) {
-        connectingPromise = mongoose.connect(configuredUri, mongooseOptions)
+      if (!cached.promise) {
+        cached.promise = mongoose.connect(uri, mongooseOptions)
           .then((conn) => {
+            cached.conn = conn;
+            cached.promise = null;
+            cached.lastError = null;
+
             console.log(`====================================================`);
             console.log(`🌿 Annadhara Database: ${details.isAtlas ? 'MongoDB Atlas (Cloud)' : 'MongoDB (Custom)'}`);
             console.log(`🌿 Cluster/Host:       ${details.host}`);
             console.log(`🌿 Database Name:      ${mongoose.connection.name || details.dbName}`);
+            console.log(`🌿 Env Variable:       ${key}`);
             console.log(`🌿 Connection Status:  Connected (readyState = 1)`);
             console.log(`====================================================`);
             return conn;
           })
           .catch((err) => {
-            connectingPromise = null;
+            cached.promise = null;
+            cached.lastError = err.message;
             throw err;
           });
       }
 
-      await connectingPromise;
+      await cached.promise;
       return mongoose.connection;
     } catch (err) {
-      connectingPromise = null;
+      cached.promise = null;
+      cached.lastError = err.message;
+
       console.error(`[Database] ❌ Connection failed to ${details.sanitized}`);
       console.error(`[Database] Error: ${err.message}`);
 
       if (details.isAtlas) {
         console.error(`[Database] 👉 MongoDB Atlas Troubleshooting Checklist:`);
         console.error(`[Database]    1. IP Whitelist: Atlas -> Network Access -> Add IP Address (use 0.0.0.0/0 for serverless).`);
-        console.error(`[Database]    2. Credentials: Check username & password in MONGODB_URI under Database Access.`);
-        console.error(`[Database]    3. Special Characters: URL-encode special characters in password (e.g. @ -> %40).`);
+        console.error(`[Database]    2. Credentials: Check username & password in ${key || 'MONGODB_URI'} under Database Access.`);
+        console.error(`[Database]    3. Special Characters: URL-encode special characters in password.`);
         console.error(`[Database]    4. Network/Firewall: Ensure outgoing port 27017 is open.`);
       }
 
@@ -115,10 +183,12 @@ const connectDB = async () => {
       return mongoose.connection;
     }
   } else {
-    // No MONGODB_URI provided
+    // No MongoDB URI provided in any supported environment variable
+    cached.lastError = 'MongoDB connection environment variable is not configured (checked MONGODB_URI, MONGO_URI, DATABASE_URL, MONGODB_URL, MONGO_URL)';
+
     if (isServerlessOrProd) {
-      console.error(`[Database] ❌ MONGODB_URI environment variable is required in production / Vercel!`);
-      throw new Error('MONGODB_URI environment variable is missing');
+      console.error(`[Database] ❌ ${cached.lastError}`);
+      throw new Error(cached.lastError);
     }
 
     console.warn(`[Database] ⚠️ MONGODB_URI is not set in your environment or server/.env file.`);
@@ -126,19 +196,6 @@ const connectDB = async () => {
     await startInMemoryDB();
     return mongoose.connection;
   }
-
-  // Register connection lifecycle listeners
-  mongoose.connection.on('error', (err) => {
-    console.error(`[Database] Mongoose runtime connection error: ${err.message}`);
-  });
-
-  mongoose.connection.on('disconnected', () => {
-    console.warn('[Database] Mongoose connection disconnected.');
-  });
-
-  mongoose.connection.on('reconnected', () => {
-    console.log('[Database] Mongoose connection re-established.');
-  });
 };
 
 /**
@@ -151,12 +208,14 @@ const startInMemoryDB = async () => {
     if (!mongodInstance) {
       mongodInstance = await MongoMemoryServer.create({
         instance: {
-          dbName: 'foodbridge',
+          dbName: 'annadhara',
         },
       });
     }
     const memoryUri = mongodInstance.getUri();
     await mongoose.connect(memoryUri);
+    cached.conn = mongoose.connection;
+    cached.lastError = null;
     console.log(`[Database] In-memory MongoDB running [Status: ${getDbStatus()}] at ${sanitizeMongoUri(memoryUri)}`);
   } catch (memErr) {
     console.error('[Database] Failed to start in-memory MongoDB:', memErr.message);
@@ -165,11 +224,27 @@ const startInMemoryDB = async () => {
 };
 
 const disconnectDB = async () => {
+  if (cached.promise) {
+    try {
+      await cached.promise;
+    } catch (_) {}
+  }
   await mongoose.disconnect();
+  cached.conn = null;
+  cached.promise = null;
+
   if (mongodInstance) {
     await mongodInstance.stop();
     mongodInstance = null;
   }
 };
 
-module.exports = { connectDB, disconnectDB, getDbStatus, sanitizeMongoUri, getDbDetails };
+module.exports = {
+  connectDB,
+  disconnectDB,
+  getDbStatus,
+  getDbDetails,
+  getDbDiagnostics,
+  sanitizeMongoUri,
+  getMongoConfig,
+};

@@ -54,6 +54,10 @@ class _VolunteerPickupsScreenState extends State<VolunteerPickupsScreen> with Si
   }
 
   void _advanceTaskStatus(PickupModel task, String nextStatus) async {
+    if (nextStatus == 'completed') {
+      _showDeliveryVerificationDialog(task);
+      return;
+    }
     final activity = Provider.of<ActivityProvider>(context, listen: false);
     final success = await activity.updatePickupStatus(task.id, nextStatus);
     if (mounted) {
@@ -73,6 +77,95 @@ class _VolunteerPickupsScreenState extends State<VolunteerPickupsScreen> with Si
         );
       }
     }
+  }
+
+  void _showDeliveryVerificationDialog(PickupModel task) {
+    final codeController = TextEditingController();
+    final notesController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Verify Delivery with Recipient', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Recipient: ${task.recipientName}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 2),
+                  Text('Item: ${task.donationTitle} (${task.requestedQuantity} ${task.donationUnit})', style: const TextStyle(fontSize: 11, color: AppColors.secondaryText)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: codeController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Recipient Delivery Code *',
+                hintText: 'e.g. DL-XXXX',
+                prefixIcon: Icon(Icons.key, size: 18),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Delivery Notes (Optional)',
+                hintText: 'e.g. Delivered intact',
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ask recipient shelter/NGO staff for the 7-character code (DL-XXXX) or QR shown on their screen.',
+              style: TextStyle(fontSize: 10, color: AppColors.secondaryText),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final code = codeController.text.trim().toUpperCase();
+              if (code.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter recipient delivery code'), backgroundColor: AppColors.error),
+                );
+                return;
+              }
+              final messenger = ScaffoldMessenger.of(context);
+              final activity = Provider.of<ActivityProvider>(context, listen: false);
+              Navigator.pop(ctx);
+
+              final success = await activity.verifyDelivery(task.id, code, notes: notesController.text.trim());
+              if (success) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Delivery confirmed and verified!'), backgroundColor: AppColors.primaryGreen),
+                );
+              } else {
+                messenger.showSnackBar(
+                  SnackBar(content: Text(activity.errorMessage.isNotEmpty ? activity.errorMessage : 'Invalid delivery code'), backgroundColor: AppColors.error),
+                );
+              }
+            },
+            child: const Text('Verify Delivery'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

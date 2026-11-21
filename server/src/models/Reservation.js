@@ -44,6 +44,22 @@ const reservationSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: '',
+      index: true,
+    },
+    // Verification code specifically for recipient & volunteer upon food arrival
+    deliveryCode: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
+    deliveryCodeVerified: {
+      type: Boolean,
+      default: false,
+    },
+    deliveryConfirmedAt: {
+      type: Date,
+      default: null,
     },
     requestNotes: {
       type: String,

@@ -6,6 +6,7 @@ class ReservationModel {
   final double requestedQuantity;
   final String status;
   final String handoverCode;
+  final String deliveryCode;
   final String donorName;
   final String recipientName;
   final String recipientOrgName;
@@ -23,6 +24,7 @@ class ReservationModel {
     required this.requestedQuantity,
     required this.status,
     required this.handoverCode,
+    this.deliveryCode = '',
     required this.donorName,
     required this.recipientName,
     this.recipientOrgName = '',
@@ -76,6 +78,7 @@ class ReservationModel {
       requestedQuantity: (json['requestedQuantity'] ?? 0).toDouble(),
       status: json['status'] ?? 'pending',
       handoverCode: json['handoverCode'] ?? '',
+      deliveryCode: json['deliveryCode'] ?? '',
       donorName: dName,
       recipientName: rName,
       recipientOrgName: rOrgName,

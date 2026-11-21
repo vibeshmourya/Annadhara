@@ -88,6 +88,65 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
     );
   }
 
+  void _showDeliveryQrDialog(ReservationModel res, String deliveryCode) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Recipient Delivery QR Code', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: QrImageView(
+                data: deliveryCode,
+                version: QrVersions.auto,
+                size: 180,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Text(
+                deliveryCode,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w900,
+                  color: Colors.amber.shade950,
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Show this QR code to the volunteer after receiving the food at your door.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: AppColors.secondaryText),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showCancelDialog(ReservationModel res) {
     _cancelReasonController.clear();
     showDialog(
@@ -293,7 +352,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('HANDOVER CODE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.secondaryText)),
+                                        const Text('PICKUP CODE (DONOR)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.secondaryText)),
                                         const SizedBox(height: 2),
                                         Text(
                                           item.handoverCode,
@@ -317,6 +376,61 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                                     ),
                                   ],
                                 ),
+                              ),
+                              const SizedBox(height: 8),
+                              Builder(
+                                builder: (ctx) {
+                                  final deliveryCode = item.deliveryCode.isNotEmpty
+                                      ? item.deliveryCode
+                                      : 'DL-${item.handoverCode.replaceAll('FB-', '')}';
+                                  return Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.amber.shade200),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'DELIVERY CODE (FOR VOLUNTEER)',
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.amber.shade900,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              deliveryCode,
+                                              style: TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w900,
+                                                color: Colors.amber.shade950,
+                                                letterSpacing: 2,
+                                                fontFamily: 'monospace',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        ElevatedButton.icon(
+                                          onPressed: () => _showDeliveryQrDialog(item, deliveryCode),
+                                          icon: const Icon(Icons.qr_code_2, size: 16),
+                                          label: const Text('Show QR', style: TextStyle(fontSize: 12)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.amber.shade800,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
                             ],
 

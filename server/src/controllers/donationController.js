@@ -160,7 +160,7 @@ const getDonations = async (req, res, next) => {
     // If not admin, and not the donor of the item, mask street address until reservation is approved
     const sanitized = rankedDonations.map((item) => {
       const isOwner = req.user && item.donor?._id?.toString() === req.user._id.toString();
-      const isAdmin = req.user && req.user.role === 'admin';
+      const isAdmin = req.user && (req.user.role || '').toUpperCase() === 'ADMIN';
 
       if (!isOwner && !isAdmin) {
         return {
@@ -250,7 +250,7 @@ const updateDonation = async (req, res, next) => {
       });
     }
 
-    if (donation.donor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (donation.donor.toString() !== req.user._id.toString() && (req.user.role || '').toUpperCase() !== 'ADMIN') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this food donation',

@@ -105,10 +105,14 @@ userSchema.virtual('password')
     return this._plainPassword;
   });
 
-// Virtual isActive for boolean compatibility
-userSchema.virtual('isActive').get(function () {
-  return this.accountStatus === 'ACTIVE';
-});
+// Virtual isActive for boolean compatibility (with getter and setter)
+userSchema.virtual('isActive')
+  .get(function () {
+    return this.accountStatus === 'ACTIVE';
+  })
+  .set(function (val) {
+    this.accountStatus = val ? 'ACTIVE' : 'INACTIVE';
+  });
 
 // 2dsphere index for geospatial discovery
 userSchema.index({ location: '2dsphere' });

@@ -111,6 +111,7 @@ void main() {
         'requestedQuantity': 10,
         'status': 'approved',
         'handoverCode': 'FB-8842',
+        'deliveryCode': 'DL-9921',
         'donor': {'name': 'City Bistro'},
         'recipient': {'name': 'Hope Harvest NGO'},
         'requestNotes': 'For evening shelter distribution',
@@ -122,6 +123,7 @@ void main() {
       expect(res.requestedQuantity, 10.0);
       expect(res.status, 'approved');
       expect(res.handoverCode, 'FB-8842');
+      expect(res.deliveryCode, 'DL-9921');
       expect(res.donorName, 'City Bistro');
       expect(res.recipientName, 'Hope Harvest NGO');
     });

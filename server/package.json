@@ -10,6 +10,7 @@
     "test": "node tests/phase1.test.js",
     "test:integration": "node tests/api.test.js",
     "test:phase4": "node tests/phase4_integration.test.js",
+    "test:delivery": "node tests/delivery_verification.test.js",
     "test:registration": "node tests/registration_regression.test.js",
     "test:upload": "node tests/upload.test.js"
   },

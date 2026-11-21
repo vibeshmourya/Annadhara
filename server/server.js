@@ -3,6 +3,7 @@ const { connectDB } = require('./src/config/db');
 const app = require('./src/app');
 const User = require('./src/models/User');
 const { seedDatabase } = require('./src/utils/seedData');
+const { startExpirationJob } = require('./src/services/expirationService');
 
 const PORT = process.env.PORT || 5000;
 
@@ -18,6 +19,7 @@ const startServer = async (customPort = null) => {
         console.log('[Server] Database is empty. Auto-seeding initial demo accounts and listings...');
         await seedDatabase();
       }
+      startExpirationJob();
     }
 
     const listenPort = customPort !== null 

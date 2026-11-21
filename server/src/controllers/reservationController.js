@@ -4,7 +4,7 @@ const PickupTask = require('../models/PickupTask');
 const { reserveDonationQuantity, releaseReservedQuantity } = require('../services/donationService');
 const { createNotification } = require('../services/notificationService');
 const { logAudit } = require('../services/auditService');
-const { generateHandoverCode } = require('../utils/generateCode');
+const { generateHandoverCode, generateDeliveryCode } = require('../utils/generateCode');
 
 /**
  * Recipient requests food reservation
@@ -49,23 +49,32 @@ const createReservation = async (req, res, next) => {
       });
     }
 
-    // 3. Generate unique handover verification code
+    // 3. Generate unique handover & delivery verification codes
     const handoverCode = generateHandoverCode();
+    const deliveryCode = generateDeliveryCode();
 
-    // 4. Create reservation record
-    const reservation = new Reservation({
-      donation: donation._id,
-      recipient: req.user._id,
-      recipientOrg: req.user.organization?._id || req.user.organization || null,
-      donor: donation.donor,
-      requestedQuantity: quantity,
-      unit: donation.unit,
-      status: 'pending',
-      handoverCode,
-      requestNotes: requestNotes || '',
-    });
+    // 4. Create reservation record with compensation rollback safety
+    let reservation;
+    try {
+      reservation = new Reservation({
+        donation: donation._id,
+        recipient: req.user._id,
+        recipientOrg: req.user.organization?._id || req.user.organization || null,
+        donor: donation.donor,
+        requestedQuantity: quantity,
+        unit: donation.unit,
+        status: 'pending',
+        handoverCode,
+        deliveryCode,
+        requestNotes: requestNotes || '',
+      });
 
-    await reservation.save();
+      await reservation.save();
+    } catch (saveErr) {
+      // Rollback atomically reserved quantity if reservation document creation fails
+      await releaseReservedQuantity(donationId, quantity);
+      throw saveErr;
+    }
     await reservation.populate([
       { path: 'donation', select: 'title category pickupLocation pickupStartTime pickupEndTime imageUrl' },
       { path: 'recipient', select: 'name email phone' },
@@ -128,7 +137,7 @@ const updateReservationStatus = async (req, res, next) => {
 
     // Only the donor or platform admin can approve / reject
     const isDonor = reservation.donor._id.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = (req.user.role || '').toUpperCase() === 'ADMIN';
 
     if (!isDonor && !isAdmin) {
       return res.status(403).json({
@@ -150,12 +159,13 @@ const updateReservationStatus = async (req, res, next) => {
       if (donorNotes) reservation.donorNotes = donorNotes;
       await reservation.save();
 
-      // Create a coordinated PickupTask automatically
+      // Create a coordinated PickupTask automatically with deliveryCode
       const pickupTask = await PickupTask.create({
         reservation: reservation._id,
         donation: reservation.donation._id,
         donor: reservation.donor._id,
         recipient: reservation.recipient._id,
+        deliveryCode: reservation.deliveryCode,
         status: 'pending',
         pickupAddress: reservation.donation.pickupLocation.address,
         pickupWindowStart: reservation.donation.pickupStartTime,
@@ -163,11 +173,11 @@ const updateReservationStatus = async (req, res, next) => {
         instructions: donorNotes || 'Please handle food with care following food safety hygiene protocols.',
       });
 
-      // Notify recipient
+      // Notify recipient with pickup code and delivery code
       await createNotification({
         recipient: reservation.recipient._id,
         title: 'Reservation Approved!',
-        message: `Your request for ${reservation.requestedQuantity} ${reservation.unit} of "${reservation.donation.title}" was approved! Your handover verification code is: ${reservation.handoverCode}`,
+        message: `Your request for ${reservation.requestedQuantity} ${reservation.unit} of "${reservation.donation.title}" was approved! Pickup Code: ${reservation.handoverCode} | Delivery Code: ${reservation.deliveryCode || reservation.handoverCode}`,
         type: 'reservation_approved',
         relatedId: reservation._id,
         relatedModel: 'Reservation',
@@ -259,7 +269,7 @@ const cancelReservation = async (req, res, next) => {
 
     const isRecipient = reservation.recipient._id.toString() === req.user._id.toString();
     const isDonor = reservation.donor._id.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = (req.user.role || '').toUpperCase() === 'ADMIN';
 
     if (!isRecipient && !isDonor && !isAdmin) {
       return res.status(403).json({
@@ -338,12 +348,14 @@ const cancelReservation = async (req, res, next) => {
  */
 const getMyReservations = async (req, res, next) => {
   try {
+    const role = (req.user.role || '').toUpperCase();
     let filter = {};
-    if (req.user.role === 'recipient') {
+
+    if (role === 'RECIPIENT') {
       filter.recipient = req.user._id;
-    } else if (req.user.role === 'donor') {
+    } else if (role === 'DONOR') {
       filter.donor = req.user._id;
-    } else if (req.user.role === 'admin') {
+    } else if (role === 'ADMIN') {
       // Admin sees all or filtered by query
       if (req.query.status) filter.status = req.query.status;
     }

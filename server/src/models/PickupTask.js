@@ -72,6 +72,20 @@ const pickupTaskSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    deliveryCode: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
+    deliveryConfirmedAt: {
+      type: Date,
+      default: null,
+    },
+    deliveryNotes: {
+      type: String,
+      default: '',
+    },
     trackingNotes: [
       {
         status: { type: String, required: true },

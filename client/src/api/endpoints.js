@@ -50,11 +50,13 @@ export const pickupApi = {
   getById: (id) => api.get(`/pickups/${id}`),
   claim: (id) => api.post(`/pickups/${id}/claim`),
   updateStatus: (id, statusData) => api.patch(`/pickups/${id}/status`, statusData),
+  verifyDelivery: (id, deliveryData) => api.post(`/pickups/${id}/verify-delivery`, deliveryData),
 };
 
 // Handover
 export const handoverApi = {
   confirm: (handoverData) => api.post('/handover/confirm', handoverData),
+  confirmDelivery: (deliveryData) => api.post('/handover/confirm-delivery', deliveryData),
   getByReservation: (reservationId) => api.get(`/handover/reservation/${reservationId}`),
 };
 

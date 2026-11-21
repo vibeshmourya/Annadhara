@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, Clock, MapPin, Building, KeyRound, AlertCircle, XCircle } from 'lucide-react';
+import { CalendarCheck, Clock, MapPin, Building, KeyRound, AlertCircle, XCircle, QrCode } from 'lucide-react';
 import { reservationApi } from '../api/endpoints';
 import { StatusBadge } from '../components/common/Badge';
 import { ConfirmationDialog } from '../components/common/Modal';
+import { QrCodeModal } from '../components/common/QrCodeModal';
 import { LoadingSpinner, EmptyState } from '../components/common/StatCard';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,6 +18,15 @@ export const Reservations = () => {
   const [selectedForCancel, setSelectedForCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // QR Modal state
+  const [qrModal, setQrModal] = useState({
+    isOpen: false,
+    code: '',
+    type: 'delivery',
+    itemTitle: '',
+    quantityText: '',
+  });
 
   const fetchReservations = async () => {
     try {
@@ -159,20 +169,73 @@ export const Reservations = () => {
                     )}
                   </div>
 
-                  {/* Handover Code Banner for Recipient */}
+                  {/* Verification Codes for Recipient */}
                   {isApproved && (
-                    <div className="bg-[#EAF4EE] p-3.5 rounded-xl border border-[#2E7D5B]/20 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#205B43] block">
-                          Pickup Handover Code
-                        </span>
-                        <span className="text-xl font-mono font-black text-[#205B43]">
-                          {res.handoverCode}
-                        </span>
+                    <div className="space-y-2">
+                      <div className="bg-[#EAF4EE] p-3 rounded-xl border border-[#2E7D5B]/20 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#205B43] block">
+                            Stage 1: Pickup Code (Donor)
+                          </span>
+                          <span className="text-lg font-mono font-black text-[#205B43]">
+                            {res.handoverCode}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setQrModal({
+                                isOpen: true,
+                                code: res.handoverCode,
+                                type: 'pickup',
+                                itemTitle: res.donation?.title,
+                                quantityText: `${res.requestedQuantity} ${res.unit}`,
+                              })
+                            }
+                            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white text-[#205B43] border border-[#2E7D5B]/30 hover:bg-stone-50 transition-colors shadow-2xs"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>QR</span>
+                          </button>
+                        </div>
                       </div>
-                      <span className="text-[11px] text-[#718078] max-w-[130px] text-right">
-                        Present this code to the donor at pickup
-                      </span>
+
+                      <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
+                            Stage 2: Delivery Verification Code
+                          </span>
+                          <span className="text-xl font-mono font-black text-amber-900 tracking-wider">
+                            {res.deliveryCode || `DL-${res.handoverCode?.replace('FB-', '') || '7294'}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setQrModal({
+                                isOpen: true,
+                                code: res.deliveryCode || `DL-${res.handoverCode?.replace('FB-', '') || '7294'}`,
+                                type: 'delivery',
+                                itemTitle: res.donation?.title,
+                                quantityText: `${res.requestedQuantity} ${res.unit}`,
+                              })
+                            }
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-200 text-amber-950 hover:bg-amber-300 transition-colors shadow-2xs"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Show Delivery QR</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {isCompleted && (
+                    <div className="bg-[#EAF4EE] p-3 rounded-xl border border-[#2E7D5B]/30 flex items-center space-x-2 text-xs font-semibold text-[#205B43]">
+                      <span className="w-2 h-2 rounded-full bg-[#2E7D5B]" />
+                      <span>Delivery Confirmed & Verified by Recipient Code ✓</span>
                     </div>
                   )}
 
@@ -238,6 +301,17 @@ export const Reservations = () => {
         confirmText="Confirm Cancellation"
         isDanger={true}
         isLoading={cancelLoading}
+      />
+
+      {/* Recipient QR Code Modal */}
+      <QrCodeModal
+        isOpen={qrModal.isOpen}
+        onClose={() => setQrModal({ ...qrModal, isOpen: false })}
+        title={qrModal.type === 'delivery' ? 'Recipient Delivery Verification QR' : 'Pickup Handover QR'}
+        code={qrModal.code}
+        type={qrModal.type}
+        itemTitle={qrModal.itemTitle}
+        quantityText={qrModal.quantityText}
       />
     </div>
   );

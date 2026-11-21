@@ -14,6 +14,7 @@ export const StatusBadge = ({ status }) => {
     in_progress: { label: 'In Progress', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
     collected: { label: 'Collected', bg: 'bg-teal-50', text: 'text-teal-800', border: 'border-teal-200' },
     verified: { label: 'Verified Org', bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-300' },
+    expired: { label: 'Expired', bg: 'bg-stone-100', text: 'text-stone-600', border: 'border-stone-200' },
   };
 
   const current = configs[status] || {
@@ -35,20 +36,70 @@ export const StatusBadge = ({ status }) => {
 
 export const CategoryBadge = ({ category }) => {
   const labels = {
-    cooked_meals: '🍲 Cooked Meals',
+    // Indian Food Categories
+    rice_meals: '🍚 Rice and Meals',
+    roti_chapati: '🫓 Roti / Chapati',
+    idli_dosa: '🥞 Idli / Dosa',
+    biryani: '🍲 Biryani',
+    snacks: '🥟 Snacks',
+    bakery_items: '🍞 Bakery Items',
+    fruits: '🍎 Fruits',
+    vegetables: '🥦 Vegetables',
+    packaged_food: '📦 Packaged Food',
+    groceries: '🌾 Groceries',
+    dairy_products: '🥛 Dairy Products',
+    // Platform standard categories
+    cooked_meals: '🍱 Cooked Meals',
     bakery_grains: '🥖 Bakery & Grains',
     produce_fresh: '🥦 Fresh Produce',
     packaged_groceries: '📦 Packaged Food',
     dairy: '🥛 Dairy',
     beverages: '🧃 Beverages',
     prepared_catering: '🍱 Catering Trays',
-    other: '🥗 Other Food',
+    other: '🍽️ Other Food',
   };
 
   return (
-    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-[#F1F5F2] text-[#26332D] border border-stone-200/60">
+    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#F1F5F2] text-[#26332D] border border-stone-200/60">
       {labels[category] || category}
     </span>
   );
 };
 
+export const DietaryBadge = ({ dietaryType }) => {
+  const isVeg = !dietaryType || dietaryType === 'Vegetarian' || dietaryType === 'Veg';
+  const isVegan = dietaryType === 'Vegan';
+
+  if (isVegan) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+        🌱 Vegan
+      </span>
+    );
+  }
+
+  if (isVeg) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-green-50 text-green-800 border border-green-200">
+        <span className="w-2 h-2 rounded-full bg-green-600 mr-1.5 inline-block" />
+        Veg
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-red-50 text-red-800 border border-red-200">
+      <span className="w-2 h-2 rounded-full bg-red-600 mr-1.5 inline-block" />
+      Non-Veg
+    </span>
+  );
+};
+
+export const FSSAIBadge = ({ number }) => {
+  if (!number) return null;
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200">
+      FSSAI: {number}
+    </span>
+  );
+};

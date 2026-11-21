@@ -188,6 +188,13 @@ export const Register = () => {
         }
       }, 1000);
     } catch (err) {
+      if (err.isConfigError) {
+        setError(
+          'Annadhara API base URL is not configured. Please set VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api in Vercel Project Settings (Environment Variables) and redeploy.'
+        );
+        return;
+      }
+
       if (!err.response) {
         const isLocal =
           typeof window !== 'undefined' &&

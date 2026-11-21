@@ -54,7 +54,11 @@ export const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      if (!err.response) {
+      if (err.isConfigError) {
+        setError(
+          'Annadhara API base URL is not configured. Please set VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api in Vercel Project Settings (Environment Variables) and redeploy.'
+        );
+      } else if (!err.response) {
         const isLocal =
           typeof window !== 'undefined' &&
           (window.location.hostname === 'localhost' ||
@@ -64,9 +68,13 @@ export const Login = () => {
             ? 'Cannot connect to backend server. Please verify your local Node.js server is running on port 5000.'
             : 'Unable to reach the Annadhara API server. Please check your internet connection or verify the deployed backend service.'
         );
+      } else if (err.response.status === 405) {
+        setError(
+          'HTTP 405 Method Not Allowed: The API request was routed to a static frontend host instead of the Express backend. Please ensure VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api is configured in Vercel Frontend Project Settings and redeployed.'
+        );
       } else if (err.response.status === 404) {
         setError(
-          'API service endpoint not found (HTTP 404). Please ensure the backend is deployed and VITE_API_BASE_URL is configured.'
+          'API service endpoint not found (HTTP 404). Please ensure the backend is deployed and VITE_API_BASE_URL points to the deployed backend URL.'
         );
       } else if (err.response.status >= 500) {
         setError('A server error occurred while signing in. Please try again shortly.');

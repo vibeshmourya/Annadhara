@@ -24,12 +24,18 @@ export const FindFood = () => {
 
   const categories = [
     { label: 'All Food', value: 'all' },
-    { label: '🍲 Cooked Meals', value: 'cooked_meals' },
-    { label: '🥖 Bakery & Grains', value: 'bakery_grains' },
-    { label: '🥦 Fresh Produce', value: 'produce_fresh' },
-    { label: '📦 Packaged Groceries', value: 'packaged_groceries' },
-    { label: '🥛 Dairy', value: 'dairy' },
-    { label: '🍱 Catering Trays', value: 'prepared_catering' },
+    { label: '🍚 Rice & Meals', value: 'rice_meals' },
+    { label: '🫓 Roti / Chapati', value: 'roti_chapati' },
+    { label: '🥞 Idli / Dosa', value: 'idli_dosa' },
+    { label: '🍲 Biryani', value: 'biryani' },
+    { label: '🥟 Snacks', value: 'snacks' },
+    { label: '🍞 Bakery Items', value: 'bakery_items' },
+    { label: '🍎 Fruits', value: 'fruits' },
+    { label: '🥦 Vegetables', value: 'vegetables' },
+    { label: '📦 Packaged Food', value: 'packaged_food' },
+    { label: '🌾 Groceries', value: 'groceries' },
+    { label: '🥛 Dairy', value: 'dairy_products' },
+    { label: '🍱 Cooked Meals', value: 'cooked_meals' },
   ];
 
   // Request browser geolocation if user agrees

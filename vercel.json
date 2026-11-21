@@ -6,8 +6,12 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/(.*)",
+      "source": "/uploads/(.*)",
       "destination": "/api/index.js"
+    },
+    {
+      "source": "/((?!api/|uploads/).*)",
+      "destination": "/index.html"
     }
   ]
 }

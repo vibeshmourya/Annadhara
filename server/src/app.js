@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const { getDbStatus } = require('./config/db');
+const { getDbStatus, connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
 // Route imports
@@ -22,28 +22,76 @@ const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 
-// Security and utility middleware (allowing cross-origin for static uploads)
+// Security middleware
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
-// CORS configuration for React web & Flutter mobile / desktop clients
-const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:5173'];
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, etc.) or from allowed origins
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Permissive in development
-      }
-    },
-    credentials: true,
-  })
-);
+// CORS configuration supporting deployed Vercel domains, custom origins, and mobile clients
+const getAllowedOrigins = () => {
+  const origins = [];
+  if (process.env.CLIENT_URL) {
+    process.env.CLIENT_URL.split(',')
+      .map((url) => url.trim())
+      .filter(Boolean)
+      .forEach((url) => origins.push(url));
+  }
+  return origins;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // 1. Allow mobile apps, curl, Postman, and server-to-server requests without Origin header
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowed = getAllowedOrigins();
+
+    // 2. Exact match against CLIENT_URL environment variable
+    if (allowed.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // 3. Allow localhost / loopback during local development
+    if (
+      origin.startsWith('http://localhost') ||
+      origin.startsWith('http://127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+
+    // 4. Automatically allow Vercel web deployments (*.vercel.app preview & production)
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // 5. Allow in development/test environments
+    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Range',
+  ],
+  exposedHeaders: ['Content-Range', 'X-Total-Count'],
+  optionsSuccessStatus: 204,
+  maxAge: 86400, // Cache preflight for 24 hours
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight OPTIONS on all routes
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -52,43 +100,106 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// Static file serving for uploads (images)
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+
 /**
- * Health check endpoint
- * GET /api/health
- * Returns: API status, database connection status, server timestamp
+ * Serverless Database Connection Middleware:
+ * Ensures MongoDB Atlas connection is active and reused across serverless invocations.
+ * Non-blocking for root / health check requests so status can always be reported.
  */
-app.get('/api/health', (req, res) => {
+app.use(async (req, res, next) => {
+  const isBypassPath =
+    req.path === '/' ||
+    req.path === '/api' ||
+    req.path === '/api/health' ||
+    req.path === '/health' ||
+    req.path.startsWith('/uploads');
+
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('[Serverless Database Middleware Error]:', err.message);
+    if (isBypassPath) {
+      return next();
+    }
+    return res.status(503).json({
+      success: false,
+      message: 'Database service is currently unavailable. Please verify MongoDB Atlas network whitelist (0.0.0.0/0) and credentials.',
+      database: getDbStatus(),
+      error: process.env.NODE_ENV === 'production' ? undefined : err.message,
+    });
+  }
+});
+
+/**
+ * Root & Base API Info Endpoints
+ * GET / and GET /api
+ * Prevents 404 on base URL visits and informs client of available endpoints.
+ */
+app.get(['/', '/api'], (req, res) => {
   const dbStatus = getDbStatus();
   res.status(200).json({
     success: true,
-    message: 'Annadhara API service is active',
+    message: 'Annadhara API is running',
     status: 'online',
     database: dbStatus,
+    version: '1.0.0',
+    tagline: 'Surplus Food. Shared Hope. Zero Waste.',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      donations: '/api/donations',
+      reservations: '/api/reservations',
+      pickups: '/api/pickups',
+      handover: '/api/handover',
+      organizations: '/api/organizations',
+      users: '/api/users',
+      dashboard: '/api/dashboard',
+      upload: '/api/upload',
+    },
     timestamp: new Date().toISOString(),
   });
 });
 
-// Static file serving for uploads (images)
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+/**
+ * Health check endpoint
+ * GET /api/health and GET /health
+ * Returns: API status, live MongoDB Atlas database connection status, server timestamp
+ */
+app.get(['/api/health', '/health'], (req, res) => {
+  const dbStatus = getDbStatus();
+  const isHealthy = dbStatus === 'connected';
+  res.status(isHealthy ? 200 : 503).json({
+    success: isHealthy,
+    message: 'Annadhara API is running',
+    database: dbStatus,
+    status: isHealthy ? 'online' : 'degraded',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+  });
+});
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/organizations', organizationRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/donations', donationRoutes);
-app.use('/api/reservations', reservationRoutes);
-app.use('/api/pickups', pickupRoutes);
-app.use('/api/handover', handoverRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/upload', uploadRoutes);
+// API Routes mounted with both /api/* and /* aliases for complete routing resilience
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/users', '/users'], userRoutes);
+app.use(['/api/organizations', '/organizations'], organizationRoutes);
+app.use(['/api/admin', '/admin'], adminRoutes);
+app.use(['/api/donations', '/donations'], donationRoutes);
+app.use(['/api/reservations', '/reservations'], reservationRoutes);
+app.use(['/api/pickups', '/pickups'], pickupRoutes);
+app.use(['/api/handover', '/handover'], handoverRoutes);
+app.use(['/api/notifications', '/notifications'], notificationRoutes);
+app.use(['/api/dashboard', '/dashboard'], dashboardRoutes);
+app.use(['/api/upload', '/upload'], uploadRoutes);
 
 // 404 Handler for undefined routes
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
     message: `API endpoint '${req.originalUrl}' not found`,
+    suggestion: 'Refer to /api/health or /api for available endpoints',
   });
 });
 

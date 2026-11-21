@@ -51,5 +51,8 @@ if (require.main === module) {
   startServer();
 }
 
-module.exports = { app, startServer };
+// Export app as callable function by default, while retaining named properties for backwards compatibility
+module.exports = app;
+module.exports.app = app;
+module.exports.startServer = startServer;
 

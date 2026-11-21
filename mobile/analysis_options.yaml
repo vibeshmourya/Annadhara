@@ -1,6 +1,22 @@
 # This file configures the analyzer, which statically analyzes Dart code to
 # check for errors, warnings, and lints.
 
+<<<<<<< HEAD
+# The following line activates a set of recommended lints for Flutter apps,
+# packages, and plugins designed to encourage good coding practices.
+analyzer:
+  errors:
+    deprecated_member_use: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+=======
+>>>>>>> 9f4b2cbf9146763dbcc149ed1a433bd2d03d7748
 include: package:flutter_lints/flutter.yaml
 
 analyzer:

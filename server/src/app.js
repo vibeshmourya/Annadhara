@@ -96,6 +96,14 @@ app.options('*', cors(corsOptions)); // Handle preflight OPTIONS on all routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// URL Normalization Middleware: safely collapses accidental duplicate /api/api prefixes
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace(/^\/api\/api\//, '/api/');
+  }
+  next();
+});
+
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }

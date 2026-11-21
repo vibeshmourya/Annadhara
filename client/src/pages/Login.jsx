@@ -54,7 +54,25 @@ export const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
+      if (!err.response) {
+        const isLocal =
+          typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' ||
+            window.location.hostname.includes('127.0.0.1'));
+        setError(
+          isLocal
+            ? 'Cannot connect to backend server. Please verify your local Node.js server is running on port 5000.'
+            : 'Unable to reach the Annadhara API server. Please check your internet connection or verify the deployed backend service.'
+        );
+      } else if (err.response.status === 404) {
+        setError(
+          'API service endpoint not found (HTTP 404). Please ensure the backend is deployed and VITE_API_BASE_URL is configured.'
+        );
+      } else if (err.response.status >= 500) {
+        setError('A server error occurred while signing in. Please try again shortly.');
+      } else {
+        setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

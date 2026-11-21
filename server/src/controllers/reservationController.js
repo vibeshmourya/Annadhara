@@ -128,7 +128,7 @@ const updateReservationStatus = async (req, res, next) => {
 
     // Only the donor or platform admin can approve / reject
     const isDonor = reservation.donor._id.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = (req.user.role || '').toUpperCase() === 'ADMIN';
 
     if (!isDonor && !isAdmin) {
       return res.status(403).json({
@@ -259,7 +259,7 @@ const cancelReservation = async (req, res, next) => {
 
     const isRecipient = reservation.recipient._id.toString() === req.user._id.toString();
     const isDonor = reservation.donor._id.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = (req.user.role || '').toUpperCase() === 'ADMIN';
 
     if (!isRecipient && !isDonor && !isAdmin) {
       return res.status(403).json({
@@ -338,12 +338,13 @@ const cancelReservation = async (req, res, next) => {
  */
 const getMyReservations = async (req, res, next) => {
   try {
+    const role = (req.user.role || '').toUpperCase();
     let filter = {};
-    if (req.user.role === 'recipient') {
+    if (role === 'RECIPIENT') {
       filter.recipient = req.user._id;
-    } else if (req.user.role === 'donor') {
+    } else if (role === 'DONOR') {
       filter.donor = req.user._id;
-    } else if (req.user.role === 'admin') {
+    } else if (role === 'ADMIN') {
       // Admin sees all or filtered by query
       if (req.query.status) filter.status = req.query.status;
     }

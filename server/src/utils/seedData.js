@@ -10,25 +10,35 @@ const HandoverRecord = require('../models/HandoverRecord');
 const Notification = require('../models/Notification');
 const AuditLog = require('../models/AuditLog');
 
-const seed = async () => {
+const seed = async ({ forceClean = false } = {}) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       await connectDB();
     }
-    console.log('[Seed] Cleaning existing data...');
 
-    await Promise.all([
-      User.deleteMany({}),
-      Organization.deleteMany({}),
-      Donation.deleteMany({}),
-      Reservation.deleteMany({}),
-      PickupTask.deleteMany({}),
-      HandoverRecord.deleteMany({}),
-      Notification.deleteMany({}),
-      AuditLog.deleteMany({}),
-    ]);
+    // Only clean existing data if explicitly requested with forceClean
+    if (forceClean) {
+      console.log('[Seed] Clean flag enabled. Removing existing demo data...');
+      await Promise.all([
+        User.deleteMany({}),
+        Organization.deleteMany({}),
+        Donation.deleteMany({}),
+        Reservation.deleteMany({}),
+        PickupTask.deleteMany({}),
+        HandoverRecord.deleteMany({}),
+        Notification.deleteMany({}),
+        AuditLog.deleteMany({}),
+      ]);
+    } else {
+      // Check if demo data already exists to prevent duplicate creation on backend restarts
+      const existingAdmin = await User.findOne({ email: 'admin@foodbridge.org' });
+      if (existingAdmin) {
+        console.log('[Seed] Demo accounts already present. Preserving existing data and skipping seed (no duplicate records).');
+        return true;
+      }
+    }
 
-    console.log('[Seed] Creating Users & Organizations...');
+    console.log('[Seed] Initializing demo accounts and listings...');
 
     // 1. Admin
     const admin = new User({
@@ -562,7 +572,10 @@ const seed = async () => {
 };
 
 if (require.main === module) {
-  seed().then(() => process.exit(0)).catch(() => process.exit(1));
+  const forceClean = process.argv.includes('--clean') || process.argv.includes('-c');
+  seed({ forceClean })
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
 }
 
 module.exports = { seedDatabase: seed };

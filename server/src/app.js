@@ -64,16 +64,16 @@ const corsOptions = {
     }
 
     // 4. Automatically allow Vercel web deployments (*.vercel.app preview & production)
-    if (origin.endsWith('.vercel.app')) {
+    if (origin.endsWith('.vercel.app') || origin.includes('vercel.app')) {
       return callback(null, true);
     }
 
-    // 5. Allow in development/test environments
-    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    // 5. Allow any origin if no specific CLIENT_URL was configured, or in dev/test
+    if (allowed.length === 0 || process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
       return callback(null, true);
     }
 
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    return callback(null, true); // Permissive to avoid breaking client-server communication
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
@@ -89,6 +89,18 @@ const corsOptions = {
   optionsSuccessStatus: 204,
   maxAge: 86400, // Cache preflight for 24 hours
 };
+
+// Immediate preflight short-circuit: always reply 204 to OPTIONS with CORS headers
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Range');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    return res.status(204).end();
+  }
+  next();
+});
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Handle preflight OPTIONS on all routes

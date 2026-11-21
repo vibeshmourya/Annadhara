@@ -319,6 +319,7 @@ async function runRegistrationTests() {
   if (passed !== total) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runRegistrationTests().catch((err) => {

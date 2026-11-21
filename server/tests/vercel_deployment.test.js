@@ -235,6 +235,7 @@ async function runVercelTests() {
   if (passed !== total) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runVercelTests().catch((err) => {

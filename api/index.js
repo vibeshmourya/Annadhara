@@ -1,9 +1,9 @@
 /**
  * Root Vercel Serverless Function Entry Point
- * Allows deployment from repository root without requiring custom Root Directory settings.
- * Forwards all incoming requests directly to the Annadhara Express backend application.
+ * Compatible with ES Module root package.json ("type": "module")
  */
-const app = require('./server/src/app');
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const app = require('../server/src/app');
 
-module.exports = app;
-
+export default app;

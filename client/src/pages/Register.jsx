@@ -219,6 +219,13 @@ export const Register = () => {
         return;
       }
 
+      if (status === 405) {
+        setError(
+          'HTTP 405 Method Not Allowed: The API request was routed to a static frontend host instead of the Express backend. Please ensure VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api is configured in Vercel Frontend Project Settings and redeployed.'
+        );
+        return;
+      }
+
       if (status === 409) {
         setError('An account with this email address already exists. Please log in instead.');
         return;

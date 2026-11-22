@@ -214,15 +214,97 @@ export const isValidPINCode = (pin) => {
 export const FOOD_SAFETY_DISCLAIMER =
   'In accordance with FSSAI surplus food regulations, all food donations must be hygienically prepared, temperature-controlled, and fit for human consumption before handover. Annadhara coordinates logistics and does not independently inspect or certify food safety.';
 
-export const DEFAULT_FOOD_IMAGE =
-  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+// Prominent Indian cities supported across the platform
+export const INDIAN_CITIES = [
+  'Bengaluru',
+  'Mysuru',
+  'Chennai',
+  'Hyderabad',
+  'Mumbai',
+  'Pune',
+  'Delhi',
+  'Kolkata',
+  'Kochi',
+  'Mangaluru',
+];
 
-export const resolveImageUrl = (url) => {
-  if (!url || typeof url !== 'string' || !url.trim()) return DEFAULT_FOOD_IMAGE;
+// Verified high-resolution authentic Indian food images for category-specific fallbacks
+export const CATEGORY_FALLBACK_IMAGES = {
+  biryani: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
+  idli_dosa: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
+  dosa: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80',
+  roti_chapati: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
+  rice_meals: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
+  curry_dal: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&auto=format&fit=crop&q=80',
+  paneer: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80',
+  snacks: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80',
+  fruits: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
+  produce_fresh: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
+  vegetables: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
+  bakery_items: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
+  bakery_grains: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
+  packaged_food: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
+  packaged_groceries: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
+  groceries: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
+  cooked_meals: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
+  dairy_products: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80',
+  beverages: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80',
+  other: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
+};
+
+// Default high-resolution authentic Indian meal fallback image
+export const DEFAULT_FOOD_IMAGE = CATEGORY_FALLBACK_IMAGES.cooked_meals;
+
+/**
+ * Returns an accurate category-specific Indian food image based on donation category and title keywords
+ */
+export const getCategoryFallbackImage = (category = '', title = '') => {
+  const text = `${title} ${category}`.toLowerCase();
+
+  if (text.includes('biryani') || text.includes('pulao')) return CATEGORY_FALLBACK_IMAGES.biryani;
+  if (text.includes('dosa')) return CATEGORY_FALLBACK_IMAGES.dosa;
+  if (text.includes('idli') || text.includes('vada') || text.includes('sambar')) return CATEGORY_FALLBACK_IMAGES.idli_dosa;
+  if (text.includes('paneer')) return CATEGORY_FALLBACK_IMAGES.paneer;
+  if (text.includes('roti') || text.includes('chapati') || text.includes('naan') || text.includes('paratha') || text.includes('kulcha')) {
+    return CATEGORY_FALLBACK_IMAGES.roti_chapati;
+  }
+  if (text.includes('fruit') || text.includes('apple') || text.includes('banana') || text.includes('orange') || text.includes('mango')) {
+    return CATEGORY_FALLBACK_IMAGES.fruits;
+  }
+  if (text.includes('vegetable') || text.includes('veggie') || text.includes('sabzi') || text.includes('salad')) {
+    return CATEGORY_FALLBACK_IMAGES.vegetables;
+  }
+  if (text.includes('samosa') || text.includes('snack') || text.includes('pakora') || text.includes('bhajji') || text.includes('kachori')) {
+    return CATEGORY_FALLBACK_IMAGES.snacks;
+  }
+  if (text.includes('bread') || text.includes('bun') || text.includes('bakery') || text.includes('cake') || text.includes('pav')) {
+    return CATEGORY_FALLBACK_IMAGES.bakery_items;
+  }
+  if (text.includes('curry') || text.includes('dal') || text.includes('korma') || text.includes('gravy')) {
+    return CATEGORY_FALLBACK_IMAGES.curry_dal;
+  }
+  if (text.includes('rice') || text.includes('meal') || text.includes('thali') || text.includes('khichdi')) {
+    return CATEGORY_FALLBACK_IMAGES.rice_meals;
+  }
+  if (text.includes('tea') || text.includes('chai') || text.includes('coffee') || text.includes('juice') || text.includes('beverage')) {
+    return CATEGORY_FALLBACK_IMAGES.beverages;
+  }
+
+  const catKey = (category || '').toLowerCase().trim();
+  return CATEGORY_FALLBACK_IMAGES[catKey] || CATEGORY_FALLBACK_IMAGES.cooked_meals;
+};
+
+/**
+ * Resolves food image URL, providing category-aware authentic fallback when empty or invalid
+ */
+export const resolveImageUrl = (url, category = '', title = '') => {
+  if (!url || typeof url !== 'string' || !url.trim() || url.includes('placeholder')) {
+    return getCategoryFallbackImage(category, title);
+  }
   const trimmed = url.trim();
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
   if (trimmed.startsWith('data:image/')) return trimmed;
-  const apiBase = import.meta.env?.VITE_API_BASE_URL || '';
+  const apiBase = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL : '';
   if (apiBase && (apiBase.startsWith('http://') || apiBase.startsWith('https://'))) {
     const origin = apiBase.replace(/\/api\/?$/, '');
     return `${origin}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;

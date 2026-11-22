@@ -67,6 +67,7 @@ export const Register = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
   const clearFieldError = (field) => {
@@ -175,22 +176,39 @@ export const Register = () => {
 
       const user = await register(payload);
       const userRole = (user.role || '').toLowerCase();
+      setSuccessMessage(`Account created successfully! Welcome to Annadhara, ${user.name}. Redirecting...`);
 
-      if (userRole === 'recipient') {
-        navigate('/find-food');
-      } else if (userRole === 'volunteer') {
-        navigate('/pickups');
-      } else {
-        navigate('/dashboard');
-      }
+      setTimeout(() => {
+        if (userRole === 'recipient') {
+          navigate('/find-food');
+        } else if (userRole === 'volunteer') {
+          navigate('/pickups');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 1000);
     } catch (err) {
-      if (!err.response) {
+      if (err.isConfigError) {
         setError(
-          'Network connection error. Please verify the backend API server is running at http://localhost:5000'
+          'Annadhara API base URL is not configured. Please set VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api in Vercel Project Settings (Environment Variables) and redeploy.'
         );
         return;
       }
 
+      if (!err.response) {
+        const isLocal =
+          typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' ||
+            window.location.hostname.includes('127.0.0.1'));
+        setError(
+          isLocal
+            ? 'Cannot connect to backend server. Please verify your local Node.js server is running on port 5000.'
+            : 'Unable to reach the Annadhara API server. Please check your internet connection or verify the deployed backend service.'
+        );
+        return;
+      }
+
+      const status = err.response.status;
       const resp = err.response.data;
 
       if (resp && resp.errors && Array.isArray(resp.errors)) {
@@ -201,15 +219,45 @@ export const Register = () => {
         setFieldErrors(mappedErrors);
       }
 
-      if (err.response.status === 409) {
+      if (status === 404) {
+        setError(
+          'API service endpoint not found (HTTP 404). Please ensure the backend is deployed and VITE_API_BASE_URL points to the deployed backend URL.'
+        );
+        return;
+      }
+
+      if (status === 405) {
+        setError(
+          'HTTP 405 Method Not Allowed: The API request was routed to a static frontend host instead of the Express backend. Please ensure VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api is configured in Vercel Frontend Project Settings and redeployed.'
+        );
+        return;
+      }
+
+      if (status === 409) {
         setError('An account with this email address already exists. Please log in instead.');
         return;
       }
 
-      if (err.response.status === 422) {
+      if (status === 422) {
         setError(
-          resp.message ||
+          resp?.message ||
             'Organization validation failed. Please check the organization type and contact details.'
+        );
+        return;
+      }
+
+      if (status === 503) {
+        setError(
+          resp?.message ||
+            'Database service is currently connecting or unavailable. Please wait a moment and try again.'
+        );
+        return;
+      }
+
+      if (status >= 500) {
+        setError(
+          resp?.message ||
+            'An internal server error occurred while processing your registration. Please try again in a few moments.'
         );
         return;
       }
@@ -220,7 +268,7 @@ export const Register = () => {
       }
 
       setError(
-        `Registration request failed (HTTP ${err.response.status}). Please check your inputs and try again.`
+        `Registration request failed (HTTP ${status}). Please check your inputs and try again.`
       );
     } finally {
       setLoading(false);
@@ -239,6 +287,13 @@ export const Register = () => {
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-xl">
         <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl border border-[#E3EAE5] shadow-xs space-y-6">
+          {successMessage && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-[#2E7D5B] flex items-start space-x-2.5">
+              <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="font-semibold">{successMessage}</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-[#D9534F] flex items-start space-x-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -315,7 +370,7 @@ export const Register = () => {
                       clearFieldError('name');
                     }}
                     required
-                    placeholder="e.g. Vikram Mehta"
+                    placeholder="e.g. Tarun Sharma"
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${
                       fieldErrors.name ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-sm text-[#26332D] placeholder-[#718078] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B] transition-all`}

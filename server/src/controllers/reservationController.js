@@ -368,7 +368,6 @@ const getMyReservations = async (req, res, next) => {
   try {
     const role = (req.user.role || '').toUpperCase();
     let filter = {};
-
     if (role === 'RECIPIENT') {
       filter.recipient = req.user._id;
     } else if (role === 'DONOR') {

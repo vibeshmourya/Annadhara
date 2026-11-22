@@ -10,14 +10,17 @@ const PORT = process.env.PORT || 5000;
 // Connect to Database and start server
 const startServer = async (customPort = null) => {
   try {
+    // 1. Initialize and await database connection before any database operations
     await connectDB();
 
-    // Auto-seed in development if database is freshly initialized
+    // 2. Only after database is verified and ready, check for initial demo seed
     if (process.env.NODE_ENV !== 'test') {
       const userCount = await User.countDocuments();
       if (userCount === 0) {
-        console.log('[Server] Database is empty. Auto-seeding initial demo accounts and listings...');
-        await seedDatabase();
+        console.log('[Server] Database contains no user accounts. Initializing demo seed data...');
+        await seedDatabase({ forceClean: false });
+      } else {
+        console.log(`[Server] Database contains ${userCount} existing user account(s). Seeding skipped (existing data preserved).`);
       }
       startExpirationJob();
     }
@@ -50,5 +53,8 @@ if (require.main === module) {
   startServer();
 }
 
-module.exports = { app, startServer };
+// Export app as callable function by default, while retaining named properties for backwards compatibility
+module.exports = app;
+module.exports.app = app;
+module.exports.startServer = startServer;
 

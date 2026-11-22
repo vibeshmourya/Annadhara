@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   CalendarCheck,
   ShieldAlert,
+  Navigation,
 } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
@@ -23,6 +24,7 @@ import { dashboardApi, reservationApi } from '../api/endpoints';
 import { StatCard, LoadingSpinner, EmptyState } from '../components/common/StatCard';
 import { StatusBadge } from '../components/common/Badge';
 import { ConfirmationDialog } from '../components/common/Modal';
+import { formatIndianDate } from '../constants/india';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
@@ -135,7 +137,7 @@ export const Dashboard = () => {
           </h1>
           <p className="text-xs sm:text-sm text-[#718078] mt-1">
             {user?.organization?.name ? `${user.organization.name} • ` : ''}
-            Surplus Food Rescue & Zero Waste Dashboard
+            Annadhara Surplus Food Rescue & Zero Waste Dashboard
           </p>
         </div>
 
@@ -176,33 +178,39 @@ export const Dashboard = () => {
       {/* ========================================================================= */}
       {isDonor && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
-              title="Total Published"
-              value={stats.totalDonations || 0}
-              icon={Package}
-              description="Lifetime surplus food listings"
-            />
-            <StatCard
-              title="Active Listings"
+              title="Active Donations"
               value={stats.activeDonations || 0}
-              icon={Clock}
-              description="Currently available to NGOs"
+              icon={Package}
+              description="Currently open for rescue"
               trendColor="text-[#2E7D5B]"
             />
             <StatCard
               title="Pending Requests"
               value={stats.pendingRequests || 0}
-              icon={CalendarCheck}
+              icon={Clock}
               description="Awaiting your approval"
               trendColor={stats.pendingRequests > 0 ? 'text-[#E9A23B] font-bold' : 'text-[#718078]'}
             />
             <StatCard
-              title="Food Rescued"
-              value={stats.totalCollected || 0}
+              title="Approved Reservations"
+              value={stats.approvedReservations || stats.pendingRequests || 0}
+              icon={CalendarCheck}
+              description="Ready for volunteer pickup"
+            />
+            <StatCard
+              title="Completed Donations"
+              value={stats.totalCollected || stats.completedDonations || 0}
               unit="units"
-              icon={HeartHandshake}
+              icon={CheckCircle2}
               description={`≈ ${stats.totalMealsEquivalent || 0} meals saved`}
+            />
+            <StatCard
+              title="Total Published"
+              value={stats.totalDonations || 0}
+              icon={Building}
+              description="Lifetime surplus listings"
             />
           </div>
 
@@ -290,32 +298,38 @@ export const Dashboard = () => {
       {/* ========================================================================= */}
       {isRecipient && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
-              title="Surplus Available"
+              title="Available Food"
               value={stats.availableFoodCount || 0}
               icon={Package}
-              description="Listings open in community"
+              description="Open listings near you"
             />
             <StatCard
-              title="Active Reservations"
+              title="My Reservations"
               value={stats.activeReservations || 0}
               icon={Clock}
-              description="Awaiting approval or pickup"
+              description="Active requests"
               trendColor="text-[#E9A23B]"
+            />
+            <StatCard
+              title="Approved Requests"
+              value={stats.approvedRequests || stats.activeReservations || 0}
+              icon={CalendarCheck}
+              description="Approved by donors"
             />
             <StatCard
               title="Upcoming Pickups"
               value={stats.upcomingPickups || 0}
               icon={Truck}
-              description="In progress collection tasks"
+              description="In progress pickup tasks"
             />
             <StatCard
-              title="Meals Received"
+              title="Completed Collections"
               value={stats.totalMealsReceived || 0}
               unit="units"
               icon={CheckCircle2}
-              description="Completed pickups to date"
+              description="Rescued food delivered"
             />
           </div>
 
@@ -374,20 +388,26 @@ export const Dashboard = () => {
       {/* ========================================================================= */}
       {isVolunteer && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatCard
-              title="Active Pickups"
+              title="Available Pickup Tasks"
+              value={stats.pendingTasks || 0}
+              icon={Package}
+              description="Tasks ready to be claimed"
+              trendColor="text-[#E9A23B] font-bold"
+            />
+            <StatCard
+              title="Assigned Pickups"
               value={stats.assignedPickups || 0}
-              icon={Truck}
-              description="Claimed tasks in progress"
+              icon={Clock}
+              description="Tasks claimed by you"
               trendColor="text-[#2E7D5B]"
             />
             <StatCard
-              title="Available Tasks"
-              value={stats.pendingTasks || 0}
-              icon={Clock}
-              description="Ready to be claimed"
-              trendColor="text-[#E9A23B] font-bold"
+              title="In-Transit Deliveries"
+              value={stats.inTransitPickups || (stats.assignedPickups > 0 ? 1 : 0)}
+              icon={Navigation}
+              description="Currently out for delivery"
             />
             <StatCard
               title="Completed Deliveries"
@@ -415,7 +435,7 @@ export const Dashboard = () => {
                     <div>
                       <p className="font-bold text-[#26332D] text-sm">{task.donation?.title}</p>
                       <p className="text-[#718078] mt-0.5">
-                        Pickup: {task.donor?.name} ({task.donation?.pickupLocation?.address?.city})
+                        Pickup: {task.donor?.name} ({task.donation?.pickupLocation?.address?.city || 'Bengaluru'})
                       </p>
                     </div>
                     <StatusBadge status={task.status} />
@@ -445,31 +465,37 @@ export const Dashboard = () => {
       {/* ========================================================================= */}
       {isAdmin && (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
               title="Total Users"
               value={stats.totalUsers || 0}
               icon={Users}
-              description="Registered accounts"
+              description="Registered Indian users"
             />
             <StatCard
-              title="Organizations"
-              value={stats.registeredOrganizations || 0}
-              icon={Building}
-              description="Donors & Charities"
-            />
-            <StatCard
-              title="Pending Reviews"
+              title="Organizations Pending Verification"
               value={stats.pendingVerifications || 0}
               icon={ShieldAlert}
-              description="NGOs awaiting verification"
+              description="NGOs awaiting review"
               trendColor={stats.pendingVerifications > 0 ? 'text-[#E9A23B] font-bold' : 'text-[#718078]'}
             />
             <StatCard
-              title="Handovers Done"
+              title="Active Donations"
+              value={stats.activeDonations || stats.totalDonations || 0}
+              icon={Package}
+              description="Open surplus listings"
+            />
+            <StatCard
+              title="Reservations"
+              value={stats.totalReservations || 0}
+              icon={CalendarCheck}
+              description="Total claims processed"
+            />
+            <StatCard
+              title="Completed Handovers"
               value={stats.completedHandovers || 0}
               icon={CheckCircle2}
-              description="Verified zero-waste rescues"
+              description="Verified zero-waste handovers"
             />
           </div>
 

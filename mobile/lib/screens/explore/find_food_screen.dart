@@ -212,7 +212,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                 color: AppColors.lightGreen,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                 image: DecorationImage(
-                  image: NetworkImage(ApiConstants.resolveImageUrl(item.imageUrl)),
+                  image: NetworkImage(ApiConstants.resolveImageUrl(item.imageUrl, item.category, item.title)),
                   fit: BoxFit.cover,
                 ),
               ),

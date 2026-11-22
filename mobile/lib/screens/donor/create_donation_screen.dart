@@ -44,7 +44,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
   // Image upload and selection state
   File? _selectedImageFile;
   String _imageUrl =
-      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+      'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80';
   bool _uploadingImage = false;
   final ImagePicker _picker = ImagePicker();
 
@@ -57,28 +57,43 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
   static const List<Map<String, String>> _foodPresets = [
     {
       'label': 'Rice & Meals',
-      'url': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      'url': 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
       'icon': '🍚',
     },
     {
-      'label': 'Roti & Sabzi',
-      'url': 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80',
+      'label': 'Roti & Chapati',
+      'url': 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
       'icon': '🫓',
     },
     {
-      'label': 'Biryani',
-      'url': 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
+      'label': 'Dum Biryani',
+      'url': 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
       'icon': '🍲',
     },
     {
-      'label': 'Idli & Dosa',
-      'url': 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=600&auto=format&fit=crop&q=80',
+      'label': 'Idli & Sambar',
+      'url': 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
       'icon': '🥞',
     },
     {
-      'label': 'Bakery',
-      'url': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+      'label': 'Crispy Dosa',
+      'url': 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80',
+      'icon': '🥞',
+    },
+    {
+      'label': 'Paneer Dishes',
+      'url': 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80',
+      'icon': '🍛',
+    },
+    {
+      'label': 'Bakery Breads',
+      'url': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
       'icon': '🍞',
+    },
+    {
+      'label': 'Fresh Fruits',
+      'url': 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
+      'icon': '🍎',
     },
   ];
 
@@ -686,7 +701,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                                     fit: BoxFit.cover,
                                   )
                                 : Image.network(
-                                    ApiConstants.resolveImageUrl(_imageUrl),
+                                    ApiConstants.resolveImageUrl(_imageUrl, _category, _foodNameController.text),
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => const Icon(Icons.fastfood, color: Colors.grey),
                                   ),

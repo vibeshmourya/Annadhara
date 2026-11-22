@@ -16,6 +16,7 @@ export const FindFood = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCity, setSelectedCity] = useState('all');
   const [userLocation, setUserLocation] = useState(null);
 
   // Reservation Modal state
@@ -24,12 +25,18 @@ export const FindFood = () => {
 
   const categories = [
     { label: 'All Food', value: 'all' },
-    { label: '🍲 Cooked Meals', value: 'cooked_meals' },
-    { label: '🥖 Bakery & Grains', value: 'bakery_grains' },
-    { label: '🥦 Fresh Produce', value: 'produce_fresh' },
-    { label: '📦 Packaged Groceries', value: 'packaged_groceries' },
-    { label: '🥛 Dairy', value: 'dairy' },
-    { label: '🍱 Catering Trays', value: 'prepared_catering' },
+    { label: '🍚 Rice & Meals', value: 'rice_meals' },
+    { label: '🫓 Roti / Chapati', value: 'roti_chapati' },
+    { label: '🥞 Idli / Dosa', value: 'idli_dosa' },
+    { label: '🍲 Biryani', value: 'biryani' },
+    { label: '🥟 Snacks', value: 'snacks' },
+    { label: '🍞 Bakery Items', value: 'bakery_items' },
+    { label: '🍎 Fruits', value: 'fruits' },
+    { label: '🥦 Vegetables', value: 'vegetables' },
+    { label: '📦 Packaged Food', value: 'packaged_food' },
+    { label: '🌾 Groceries', value: 'groceries' },
+    { label: '🥛 Dairy', value: 'dairy_products' },
+    { label: '🍱 Cooked Meals', value: 'cooked_meals' },
   ];
 
   // Request browser geolocation if user agrees
@@ -57,6 +64,9 @@ export const FindFood = () => {
       if (selectedCategory && selectedCategory !== 'all') {
         params.category = selectedCategory;
       }
+      if (selectedCity && selectedCity !== 'all') {
+        params.city = selectedCity;
+      }
       if (search.trim()) {
         params.search = search.trim();
       }
@@ -81,7 +91,7 @@ export const FindFood = () => {
       fetchDonations();
     }, 250);
     return () => clearTimeout(debounce);
-  }, [selectedCategory, search, userLocation]);
+  }, [selectedCategory, selectedCity, search, userLocation]);
 
   const handleOpenReserve = (donation) => {
     if (!isAuthenticated) {
@@ -119,6 +129,8 @@ export const FindFood = () => {
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         categories={categories}
+        selectedCity={selectedCity}
+        setSelectedCity={setSelectedCity}
       />
 
       {/* Error alert if any */}

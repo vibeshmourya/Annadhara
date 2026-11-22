@@ -110,7 +110,7 @@ const createDonation = async (req, res, next) => {
  */
 const getDonations = async (req, res, next) => {
   try {
-    const { search, category, status, minQuantity, lat, lng, sort } = req.query;
+    const { search, category, status, minQuantity, lat, lng, sort, city } = req.query;
 
     const query = {
       isReported: { $ne: true }, // Don't show blocked/reported items by default
@@ -128,6 +128,10 @@ const getDonations = async (req, res, next) => {
       query.category = category;
     }
 
+    if (city && city !== 'all') {
+      query['pickupLocation.address.city'] = { $regex: city, $options: 'i' };
+    }
+
     if (minQuantity) {
       query.availableQuantity = { $gte: Number(minQuantity) };
     }
@@ -137,6 +141,8 @@ const getDonations = async (req, res, next) => {
         { title: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
         { 'pickupLocation.address.city': { $regex: search, $options: 'i' } },
+        { 'pickupLocation.address.areaLocality': { $regex: search, $options: 'i' } },
+        { 'pickupLocation.address.state': { $regex: search, $options: 'i' } },
       ];
     }
 

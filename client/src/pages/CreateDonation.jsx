@@ -26,43 +26,74 @@ import {
   FOOD_SAFETY_DISCLAIMER,
   DEFAULT_FOOD_IMAGE,
   resolveImageUrl,
+  getCategoryFallbackImage,
 } from '../constants/india';
 import { reverseGeocodeCoordinates } from '../utils/reverseGeocode';
 
 // Common non-vegetarian indicator keywords for mismatch warning
 const NON_VEG_REGEX = /\b(egg|eggs|chicken|mutton|fish|meat|beef|pork|prawn|prawns|seafood|bacon|ham|crab|crabs|duck|keema|gosht|murgh)\b/i;
 
-// Curated high quality food image presets
+// Curated high quality authentic Indian food image presets
 const FOOD_PRESETS = [
   {
     name: 'Rice & Meals',
-    url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+    category: 'rice_meals',
+    url: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
     icon: '🍚',
   },
   {
-    name: 'Roti & Sabzi',
-    url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80',
+    name: 'Roti & Chapati',
+    category: 'roti_chapati',
+    url: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
     icon: '🫓',
   },
   {
-    name: 'Biryani',
-    url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
+    name: 'Dum Biryani',
+    category: 'biryani',
+    url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
     icon: '🍲',
   },
   {
-    name: 'Idli & Dosa',
-    url: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=600&auto=format&fit=crop&q=80',
+    name: 'Idli & Sambar',
+    category: 'idli_dosa',
+    url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
     icon: '🥞',
   },
   {
-    name: 'Bakery & Bread',
-    url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+    name: 'Crispy Dosa',
+    category: 'idli_dosa',
+    url: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80',
+    icon: '🥞',
+  },
+  {
+    name: 'Paneer & Curries',
+    category: 'cooked_meals',
+    url: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80',
+    icon: '🍛',
+  },
+  {
+    name: 'Samosa & Snacks',
+    category: 'snacks',
+    url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80',
+    icon: '🥟',
+  },
+  {
+    name: 'Fresh Farm Fruits',
+    category: 'fruits',
+    url: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
+    icon: '🍎',
+  },
+  {
+    name: 'Bakery & Pav Buns',
+    category: 'bakery_items',
+    url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
     icon: '🍞',
   },
   {
-    name: 'Fruits & Veggies',
-    url: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600&auto=format&fit=crop&q=80',
-    icon: '🍎',
+    name: 'Packaged Food',
+    category: 'packaged_food',
+    url: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
+    icon: '📦',
   },
 ];
 
@@ -188,10 +219,23 @@ export const CreateDonation = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    setFormData((prev) => {
+      const nextData = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      };
+
+      // When category changes, auto-select matching authentic preset image if not custom-uploaded
+      if (name === 'category') {
+        const isPreset = FOOD_PRESETS.some((p) => p.url === prev.imageUrl);
+        if (isPreset || !prev.imageUrl) {
+          const match = FOOD_PRESETS.find((p) => p.category === value) || FOOD_PRESETS[0];
+          nextData.imageUrl = match.url;
+        }
+      }
+
+      return nextData;
+    });
   };
 
   // Handle local file selection and upload
@@ -524,11 +568,12 @@ export const CreateDonation = () => {
               <div className="relative w-full sm:w-48 h-36 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shrink-0 shadow-xs">
                 {formData.imageUrl ? (
                   <img
-                    src={resolveImageUrl(formData.imageUrl)}
+                    src={resolveImageUrl(formData.imageUrl, formData.category, formData.title)}
                     alt="Food preview"
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.src = DEFAULT_FOOD_IMAGE;
+                      e.target.onerror = null;
+                      e.target.src = getCategoryFallbackImage(formData.category, formData.title);
                     }}
                   />
                 ) : (

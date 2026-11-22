@@ -193,7 +193,7 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
               decoration: BoxDecoration(
                 color: AppColors.lightGreen,
                 image: DecorationImage(
-                  image: NetworkImage(ApiConstants.resolveImageUrl(don.imageUrl)),
+                  image: NetworkImage(ApiConstants.resolveImageUrl(don.imageUrl, don.category, don.title)),
                   fit: BoxFit.cover,
                 ),
               ),

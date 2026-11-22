@@ -14,7 +14,12 @@
     "test:contributions": "node tests/verified_contributions.test.js",
     "test:concurrency": "node tests/concurrency_inventory.test.js",
     "test:registration": "node tests/registration_regression.test.js",
-    "test:upload": "node tests/upload.test.js"
+    "test:upload": "node tests/upload.test.js",
+    "test:atlas": "node tests/atlas_integration.test.js",
+    "test:vercel": "node tests/vercel_deployment.test.js",
+    "test:regprod": "node tests/registration_production.test.js",
+    "test:405": "node tests/http_405_diagnostic.test.js",
+    "test:axios": "node tests/client_axios_config.test.js"
   },
   "keywords": [
     "annadhara",

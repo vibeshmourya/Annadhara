@@ -54,7 +54,33 @@ export const Login = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
+      if (err.isConfigError) {
+        setError(
+          'Annadhara API base URL is not configured. Please set VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api in Vercel Project Settings (Environment Variables) and redeploy.'
+        );
+      } else if (!err.response) {
+        const isLocal =
+          typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' ||
+            window.location.hostname.includes('127.0.0.1'));
+        setError(
+          isLocal
+            ? 'Cannot connect to backend server. Please verify your local Node.js server is running on port 5000.'
+            : 'Unable to reach the Annadhara API server. Please check your internet connection or verify the deployed backend service.'
+        );
+      } else if (err.response.status === 405) {
+        setError(
+          'HTTP 405 Method Not Allowed: The API request was routed to a static frontend host instead of the Express backend. Please ensure VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api is configured in Vercel Frontend Project Settings and redeployed.'
+        );
+      } else if (err.response.status === 404) {
+        setError(
+          'API service endpoint not found (HTTP 404). Please ensure the backend is deployed and VITE_API_BASE_URL points to the deployed backend URL.'
+        );
+      } else if (err.response.status >= 500) {
+        setError('A server error occurred while signing in. Please try again shortly.');
+      } else {
+        setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -161,49 +187,49 @@ export const Login = () => {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickLogin('donor@greengarden.com', 'Donor@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('tarun.donor@annadhara.in', 'Donor@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <Building className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Donor</span>
-                  <span className="text-[10px] text-[#718078] truncate">Bistro</span>
+                  <span className="text-[10px] text-[#718078] truncate">Tarun (Kitchen)</span>
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('ngo@hopeharvest.org', 'Recipient@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('fathima.ngo@annadhara.in', 'Recipient@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Recipient NGO</span>
-                  <span className="text-[10px] text-[#718078] truncate">Hope Harvest</span>
+                  <span className="text-[10px] text-[#718078] truncate">Fathima (Trust)</span>
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('alex@volunteer.org', 'Volunteer@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('swathi.volunteer@annadhara.in', 'Volunteer@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <Truck className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Volunteer</span>
-                  <span className="text-[10px] text-[#718078] truncate">Alex R.</span>
+                  <span className="text-[10px] text-[#718078] truncate">Swathi (Partner)</span>
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('admin@foodbridge.org', 'Admin@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('vibesh.admin@annadhara.in', 'Admin@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <Shield className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Administrator</span>
-                  <span className="text-[10px] text-[#718078] truncate">Sarah J.</span>
+                  <span className="text-[10px] text-[#718078] truncate">Vibesh (Admin)</span>
                 </div>
               </button>
             </div>

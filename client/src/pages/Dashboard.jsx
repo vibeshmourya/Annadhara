@@ -25,6 +25,7 @@ import { StatCard, LoadingSpinner, EmptyState } from '../components/common/StatC
 import { StatusBadge } from '../components/common/Badge';
 import { ConfirmationDialog } from '../components/common/Modal';
 import { formatIndianDate } from '../constants/india';
+import { VerifiedContributionsWidget } from '../components/contributions/VerifiedContributionsWidget';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
@@ -290,6 +291,9 @@ export const Dashboard = () => {
               )}
             </div>
           </div>
+
+          {/* Annadhara Verified Contributions & Recognition Profile */}
+          <VerifiedContributionsWidget />
         </>
       )}
 
@@ -354,9 +358,9 @@ export const Dashboard = () => {
                     <div className="flex items-center space-x-3">
                       {res.status === 'approved' && (
                         <div className="text-right">
-                          <span className="text-[10px] text-[#718078]">Handover Code:</span>
-                          <span className="block font-mono font-bold text-[#205B43] bg-[#EAF4EE] px-2 py-0.5 rounded">
-                            {res.handoverCode}
+                          <span className="text-[10px] text-amber-800 font-medium">Delivery Code:</span>
+                          <span className="block font-mono font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                            {res.deliveryCode || res.handoverCode}
                           </span>
                         </div>
                       )}

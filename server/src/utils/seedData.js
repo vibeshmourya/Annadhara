@@ -511,6 +511,86 @@ const seed = async ({ forceClean = false } = {}) => {
         safetyGuidelinesAccepted: true,
         fssaiNumber: '11224189000124',
       },
+      pickupStartTime: new Date(now.getTime() - 20 * 3600 * 1000),
+      pickupEndTime: new Date(now.getTime() - 14 * 3600 * 1000),
+      imageUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=600&auto=format&fit=crop&q=80',
+      status: 'completed',
+      donor: donor1._id,
+      organization: orgDonor1._id,
+      safetyGuidelinesAccepted: true,
+      fssaiNumber: '11224189000124',
+    });
+
+    console.log('[Seed] Creating Reservations & Handover records...');
+
+    const res1 = await Reservation.create({
+      donation: donation1._id,
+      recipient: recipient1._id,
+      recipientOrg: orgRecipient1._id,
+      donor: donor1._id,
+      requestedQuantity: 10,
+      unit: 'meals',
+      status: 'approved',
+      handoverCode: 'FB-7294',
+      deliveryCode: 'DL-9382',
+      requestNotes: 'Can collect this evening for our evening family shelter feeding program.',
+      donorNotes: 'Approved! Please pick up from side kitchen entrance.',
+      approvedAt: new Date(now.getTime() - 30 * 60 * 1000),
+    });
+
+    const pickupTask1 = await PickupTask.create({
+      reservation: res1._id,
+      donation: donation1._id,
+      donor: donor1._id,
+      recipient: recipient1._id,
+      volunteer: volunteer1._id,
+      deliveryCode: 'DL-9382',
+      status: 'assigned',
+      pickupAddress: donation1.pickupLocation.address,
+      deliveryAddress: orgRecipient1.address,
+      instructions: 'Pick up from Green Garden Bistro side kitchen door. Handle with thermal bag.',
+      pickupWindowStart: donation1.pickupStartTime,
+      pickupWindowEnd: donation1.pickupEndTime,
+      assignedAt: new Date(now.getTime() - 20 * 60 * 1000),
+      trackingNotes: [
+        { status: 'assigned', note: 'Claimed by Alex Rivera', updatedBy: volunteer1._id },
+      ],
+    });
+
+    const resHistorical = await Reservation.create({
+      donation: donation4._id,
+      recipient: recipient1._id,
+      recipientOrg: orgRecipient1._id,
+      donor: donor1._id,
+      requestedQuantity: 30,
+      unit: 'meals',
+      status: 'completed',
+      handoverCode: 'FB-3810',
+      requestNotes: 'Shelter food service distribution',
+      approvedAt: new Date(now.getTime() - 18 * 3600 * 1000),
+      completedAt: new Date(now.getTime() - 15 * 3600 * 1000),
+    });
+
+    await HandoverRecord.create({
+      reservation: resHistorical._id,
+      donation: donation4._id,
+      donor: donor1._id,
+      recipient: recipient1._id,
+      volunteer: volunteer1._id,
+      quantityHandedOver: 30,
+      unit: 'meals',
+      handoverCode: 'FB-3810',
+      verificationMethod: 'code',
+      confirmedByDonor: true,
+      confirmedByRecipient: true,
+      donorConfirmedAt: new Date(now.getTime() - 15 * 3600 * 1000),
+      recipientConfirmedAt: new Date(now.getTime() - 15 * 3600 * 1000),
+      notes: 'Handover verified and completed successfully.',
+    });
+
+    console.log('[Seed] Creating Sample Notifications & Audit Logs...');
+
+    await Notification.create([
       {
         title: 'Shahi Paneer Makhani & Mixed Veg Dal Tadka with Jeera Rice',
         category: 'cooked_meals',

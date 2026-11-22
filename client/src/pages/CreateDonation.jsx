@@ -28,6 +28,7 @@ import {
   resolveImageUrl,
   getCategoryFallbackImage,
 } from '../constants/india';
+import { reverseGeocodeCoordinates } from '../utils/reverseGeocode';
 
 // Common non-vegetarian indicator keywords for mismatch warning
 const NON_VEG_REGEX = /\b(egg|eggs|chicken|mutton|fish|meat|beef|pork|prawn|prawns|seafood|bacon|ham|crab|crabs|duck|keema|gosht|murgh)\b/i;
@@ -96,6 +97,29 @@ const FOOD_PRESETS = [
   },
 ];
 
+const INDIAN_CITY_COORDINATES = {
+  'bengaluru': [77.5946, 12.9716],
+  'bangalore': [77.5946, 12.9716],
+  'mumbai': [72.8777, 19.0760],
+  'delhi': [77.1025, 28.7041],
+  'new delhi': [77.2090, 28.6139],
+  'hyderabad': [78.4867, 17.3850],
+  'chennai': [80.2707, 13.0827],
+  'kolkata': [88.3639, 22.5726],
+  'pune': [73.8567, 18.5204],
+  'ahmedabad': [72.5714, 23.0225],
+  'jaipur': [75.7873, 26.9124],
+  'lucknow': [80.9462, 26.8467],
+  'chandigarh': [76.7794, 30.7333],
+  'kochi': [76.2673, 9.9312],
+  'bhopal': [77.4126, 23.2599],
+  'patna': [85.1376, 25.5941],
+  'surat': [72.8311, 21.1702],
+  'nagpur': [79.0882, 21.1458],
+  'indore': [75.8577, 22.7196],
+  'coimbatore': [76.9558, 11.0168],
+};
+
 export const CreateDonation = () => {
   const navigate = useNavigate();
 
@@ -132,6 +156,54 @@ export const CreateDonation = () => {
   const [uploadError, setUploadError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // GPS Device Geolocation State
+  const [deviceLocation, setDeviceLocation] = useState(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState('');
+
+  const handleDetectGPS = () => {
+    if (!('geolocation' in navigator)) {
+      setGpsStatus('Geolocation not supported by your browser');
+      return;
+    }
+    setDetectingLocation(true);
+    setGpsStatus('Detecting device GPS coordinates...');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setDeviceLocation({ lat, lng });
+        setGpsStatus(`GPS coordinates locked (${lat.toFixed(4)}, ${lng.toFixed(4)}). Auto-detecting address...`);
+
+        try {
+          const resolved = await reverseGeocodeCoordinates(lat, lng);
+          setFormData((prev) => ({
+            ...prev,
+            street: resolved.street || prev.street,
+            areaLocality: resolved.areaLocality || prev.areaLocality,
+            city: resolved.city || prev.city,
+            district: resolved.district || prev.district,
+            state: resolved.state || prev.state,
+            postalCode: resolved.postalCode || prev.postalCode,
+          }));
+
+          const label = resolved.areaLocality || resolved.city || 'Detected Area';
+          setGpsStatus(`📍 Address auto-detected: ${label} (${lat.toFixed(4)}, ${lng.toFixed(4)}) ✓`);
+        } catch (geoErr) {
+          console.warn('Reverse geocode error:', geoErr);
+          setGpsStatus(`GPS locked: ${lat.toFixed(4)}, ${lng.toFixed(4)} ✓ (Enter address details if needed)`);
+        } finally {
+          setDetectingLocation(false);
+        }
+      },
+      (err) => {
+        setDetectingLocation(false);
+        setGpsStatus(`Location unavailable or denied (${err.message || 'permission error'}).`);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   // Check for dietary mismatch
   const dietaryMismatch = useMemo(() => {
@@ -256,8 +328,10 @@ export const CreateDonation = () => {
           },
           location: {
             type: 'Point',
-            // Default center coordinates in Bengaluru, India
-            coordinates: [77.6412, 12.9719],
+            // Real-life coordinates: Uses GPS coordinates if detected, else mapped Indian city coordinates, else default Bengaluru
+            coordinates: deviceLocation
+              ? [Number(deviceLocation.lng), Number(deviceLocation.lat)]
+              : (INDIAN_CITY_COORDINATES[formData.city.trim().toLowerCase()] || [77.5946, 12.9716]),
           },
         },
         pickupStartTime: new Date(formData.pickupStartTime).toISOString(),
@@ -649,9 +723,26 @@ export const CreateDonation = () => {
 
           {/* Section 4: Pickup Window & Indian Address */}
           <div className="space-y-4">
-            <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#205B43] border-b border-stone-100 pb-2">
-              4. Pickup Availability Window & Location (India)
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-100 pb-2 gap-2">
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-[#205B43]">
+                4. Pickup Availability Window & Location (India)
+              </h3>
+              <button
+                type="button"
+                onClick={handleDetectGPS}
+                disabled={detectingLocation}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#EAF4EE] text-[#205B43] hover:bg-[#d5edd9] transition-colors self-start sm:self-auto"
+              >
+                <span>📍</span>
+                <span>{detectingLocation ? 'Detecting GPS...' : 'Auto-Detect Device GPS'}</span>
+              </button>
+            </div>
+
+            {gpsStatus && (
+              <div className="px-3.5 py-2 rounded-xl bg-[#EAF4EE]/70 border border-[#2E7D5B]/20 text-xs text-[#205B43] font-medium">
+                {gpsStatus}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

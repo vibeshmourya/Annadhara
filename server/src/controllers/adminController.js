@@ -47,18 +47,19 @@ const toggleUserStatus = async (req, res, next) => {
       });
     }
 
-    if (user.role === 'admin' && user._id.toString() === req.user._id.toString()) {
+    if ((user.role || '').toUpperCase() === 'ADMIN' && user._id.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
         message: 'Admins cannot deactivate their own account',
       });
     }
 
-    user.isActive = !user.isActive;
+    const nextActive = user.accountStatus !== 'ACTIVE';
+    user.accountStatus = nextActive ? 'ACTIVE' : 'INACTIVE';
     await user.save();
 
     await logAudit({
-      action: user.isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+      action: nextActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
       user: req.user._id,
       role: req.user.role,
       entityType: 'User',
@@ -68,7 +69,7 @@ const toggleUserStatus = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `User account has been ${user.isActive ? 'activated' : 'deactivated'}`,
+      message: `User account has been ${nextActive ? 'activated' : 'deactivated'}`,
       data: user,
     });
   } catch (error) {

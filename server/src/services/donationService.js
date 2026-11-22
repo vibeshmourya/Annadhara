@@ -20,9 +20,14 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
 
 /**
  * Atomically reserves a quantity for a donation
- * Uses findOneAndUpdate with $gte condition to strictly prevent oversubscription race conditions
+ * Uses aggregation pipeline in findOneAndUpdate to atomically decrement quantity AND compute status
+ * Eliminates race conditions between simultaneous concurrent reservations
  */
-async function reserveDonationQuantity(donationId, quantity) {
+async function reserveDonationQuantity(donationId, quantity, options = {}) {
+  const session = options.session || null;
+  const findOptions = { new: true };
+  if (session) findOptions.session = session;
+
   const donation = await Donation.findOneAndUpdate(
     {
       _id: donationId,
@@ -30,22 +35,36 @@ async function reserveDonationQuantity(donationId, quantity) {
       pickupEndTime: { $gt: new Date() },
       availableQuantity: { $gte: quantity },
     },
-    {
-      $inc: {
-        availableQuantity: -quantity,
-        reservedQuantity: quantity,
+    [
+      {
+        $set: {
+          availableQuantity: { $subtract: ['$availableQuantity', quantity] },
+          reservedQuantity: { $add: ['$reservedQuantity', quantity] },
+          status: {
+            $cond: {
+              if: { $lte: [{ $subtract: ['$availableQuantity', quantity] }, 0] },
+              then: 'fully_reserved',
+              else: 'partially_reserved',
+            },
+          },
+        },
       },
-    },
-    { new: true }
+    ],
+    findOptions
   );
 
   if (!donation) {
     // Determine why it failed
-    const existing = await Donation.findById(donationId);
+    const query = Donation.findById(donationId);
+    if (session) query.session(session);
+    const existing = await query;
     if (!existing) throw new Error('Donation not found');
     if (existing.pickupEndTime <= new Date()) throw new Error('Donation pickup deadline has passed');
     if (existing.status === 'completed' || existing.status === 'cancelled') {
       throw new Error(`Donation is already ${existing.status}`);
+    }
+    if (existing.status === 'expired') {
+      throw new Error('Donation has expired and can no longer be reserved');
     }
     if (existing.availableQuantity < quantity) {
       throw new Error(
@@ -55,79 +74,95 @@ async function reserveDonationQuantity(donationId, quantity) {
     throw new Error('Unable to reserve requested quantity');
   }
 
-  // Update status based on remaining available quantity
-  let newStatus = donation.status;
-  if (donation.availableQuantity === 0) {
-    newStatus = 'fully_reserved';
-  } else {
-    newStatus = 'partially_reserved';
-  }
-
-  if (donation.status !== newStatus) {
-    donation.status = newStatus;
-    await donation.save();
-  }
-
   return donation;
 }
 
 /**
  * Atomically releases a reserved quantity when a reservation is rejected or cancelled
  */
-async function releaseReservedQuantity(donationId, quantity) {
+async function releaseReservedQuantity(donationId, quantity, options = {}) {
+  const session = options.session || null;
+  const findOptions = { new: true };
+  if (session) findOptions.session = session;
+
   const donation = await Donation.findOneAndUpdate(
-    { _id: donationId },
-    {
-      $inc: {
-        availableQuantity: quantity,
-        reservedQuantity: -quantity,
+    { _id: donationId, reservedQuantity: { $gte: quantity } },
+    [
+      {
+        $set: {
+          availableQuantity: { $add: ['$availableQuantity', quantity] },
+          reservedQuantity: { $subtract: ['$reservedQuantity', quantity] },
+          status: {
+            $cond: {
+              if: { $in: ['$status', ['expired', 'cancelled']] },
+              then: '$status',
+              else: {
+                $cond: {
+                  if: { $gte: [{ $add: ['$availableQuantity', quantity] }, '$totalQuantity'] },
+                  then: 'available',
+                  else: {
+                    $cond: {
+                      if: { $gt: [{ $add: ['$availableQuantity', quantity] }, 0] },
+                      then: 'partially_reserved',
+                      else: 'fully_reserved',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
-    },
-    { new: true }
+    ],
+    findOptions
   );
 
-  if (!donation) return null;
-
-  // Recompute status
-  let newStatus = 'available';
-  if (donation.availableQuantity < donation.totalQuantity && donation.availableQuantity > 0) {
-    newStatus = 'partially_reserved';
-  } else if (donation.availableQuantity === 0 && donation.reservedQuantity > 0) {
-    newStatus = 'fully_reserved';
+  if (!donation) {
+    const query = Donation.findById(donationId);
+    if (session) query.session(session);
+    return await query;
   }
-
-  // Ensure invariants
-  if (donation.availableQuantity < 0) donation.availableQuantity = 0;
-  if (donation.reservedQuantity < 0) donation.reservedQuantity = 0;
-
-  donation.status = newStatus;
-  await donation.save();
   return donation;
 }
 
 /**
  * Atomically completes handover of reserved quantity to collected quantity
  */
-async function completeHandoverQuantity(donationId, quantity) {
+async function completeHandoverQuantity(donationId, quantity, options = {}) {
+  const session = options.session || null;
+  const findOptions = { new: true };
+  if (session) findOptions.session = session;
+
   const donation = await Donation.findOneAndUpdate(
-    { _id: donationId },
-    {
-      $inc: {
-        reservedQuantity: -quantity,
-        collectedQuantity: quantity,
+    { _id: donationId, reservedQuantity: { $gte: quantity } },
+    [
+      {
+        $set: {
+          reservedQuantity: { $subtract: ['$reservedQuantity', quantity] },
+          collectedQuantity: { $add: ['$collectedQuantity', quantity] },
+          status: {
+            $cond: {
+              if: {
+                $and: [
+                  { $eq: ['$availableQuantity', 0] },
+                  { $lte: [{ $subtract: ['$reservedQuantity', quantity] }, 0] },
+                ],
+              },
+              then: 'completed',
+              else: '$status',
+            },
+          },
+        },
       },
-    },
-    { new: true }
+    ],
+    findOptions
   );
 
-  if (!donation) return null;
-
-  // Check if fully collected and complete
-  if (donation.availableQuantity === 0 && donation.reservedQuantity <= 0) {
-    donation.status = 'completed';
-    donation.reservedQuantity = 0;
+  if (!donation) {
+    const query = Donation.findById(donationId);
+    if (session) query.session(session);
+    return await query;
   }
-  await donation.save();
   return donation;
 }
 

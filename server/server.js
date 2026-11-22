@@ -3,6 +3,7 @@ const { connectDB } = require('./src/config/db');
 const app = require('./src/app');
 const User = require('./src/models/User');
 const { seedDatabase } = require('./src/utils/seedData');
+const { startExpirationJob } = require('./src/services/expirationService');
 
 const PORT = process.env.PORT || 5000;
 
@@ -21,6 +22,7 @@ const startServer = async (customPort = null) => {
       } else {
         console.log(`[Server] Database contains ${userCount} existing user account(s). Seeding skipped (existing data preserved).`);
       }
+      startExpirationJob();
     }
 
     const listenPort = customPort !== null 

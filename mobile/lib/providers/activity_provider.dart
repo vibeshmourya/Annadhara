@@ -169,4 +169,23 @@ class ActivityProvider with ChangeNotifier {
     }
     return false;
   }
+
+  Future<bool> verifyDelivery(String taskId, String deliveryCode, {String? notes}) async {
+    try {
+      final res = await ApiService.post('/pickups/$taskId/verify-delivery', {
+        'deliveryCode': deliveryCode.trim().toUpperCase(),
+        'notes': notes ?? 'Delivery verified with recipient via mobile app',
+      });
+      if (res.success) {
+        await fetchPickups();
+        await fetchReservations();
+        return true;
+      } else {
+        _errorMessage = res.message;
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+    return false;
+  }
 }

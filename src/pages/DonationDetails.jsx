@@ -19,7 +19,7 @@ import { ReservationModal } from '../components/donations/ReservationModal';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/StatCard';
 import { useAuth } from '../context/AuthContext';
-import { formatIndianDate, FOOD_SAFETY_DISCLAIMER, resolveImageUrl, DEFAULT_FOOD_IMAGE } from '../constants/india';
+import { formatIndianDate, FOOD_SAFETY_DISCLAIMER, resolveImageUrl, getCategoryFallbackImage } from '../constants/india';
 
 export const DonationDetails = () => {
   const { id } = useParams();
@@ -120,11 +120,12 @@ export const DonationDetails = () => {
           {/* Image Pane */}
           <div className="relative h-72 md:h-full min-h-[320px] bg-stone-100">
             <img
-              src={resolveImageUrl(donation.imageUrl)}
+              src={resolveImageUrl(donation.imageUrl, donation.category, donation.title)}
               alt={donation.title}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.src = DEFAULT_FOOD_IMAGE;
+                e.target.onerror = null;
+                e.target.src = getCategoryFallbackImage(donation.category, donation.title);
               }}
             />
             <div className="absolute top-4 left-4 flex flex-wrap gap-2">

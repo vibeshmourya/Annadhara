@@ -198,10 +198,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 runSpacing: 8,
                 alignment: WrapAlignment.center,
                 children: [
-                  _demoChip('Donor Bistro', 'donor@greengarden.com', 'Donor@123', Icons.restaurant),
-                  _demoChip('Recipient NGO', 'ngo@hopeharvest.org', 'Recipient@123', Icons.shield),
-                  _demoChip('Volunteer', 'alex@volunteer.org', 'Volunteer@123', Icons.delivery_dining),
-                  _demoChip('Admin', 'admin@foodbridge.org', 'Admin@123', Icons.admin_panel_settings),
+                  _demoChip('Donor: Tarun', 'tarun.donor@annadhara.in', 'Donor@123', Icons.restaurant),
+                  _demoChip('NGO: Fathima', 'fathima.ngo@annadhara.in', 'Recipient@123', Icons.shield),
+                  _demoChip('Volunteer: Swathi', 'swathi.volunteer@annadhara.in', 'Volunteer@123', Icons.delivery_dining),
+                  _demoChip('Admin: Vibesh', 'vibesh.admin@annadhara.in', 'Admin@123', Icons.admin_panel_settings),
                 ],
               ),
 

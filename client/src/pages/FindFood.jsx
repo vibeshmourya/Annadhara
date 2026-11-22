@@ -16,6 +16,7 @@ export const FindFood = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCity, setSelectedCity] = useState('all');
   const [userLocation, setUserLocation] = useState(null);
 
   // Reservation Modal state
@@ -63,6 +64,9 @@ export const FindFood = () => {
       if (selectedCategory && selectedCategory !== 'all') {
         params.category = selectedCategory;
       }
+      if (selectedCity && selectedCity !== 'all') {
+        params.city = selectedCity;
+      }
       if (search.trim()) {
         params.search = search.trim();
       }
@@ -87,7 +91,7 @@ export const FindFood = () => {
       fetchDonations();
     }, 250);
     return () => clearTimeout(debounce);
-  }, [selectedCategory, search, userLocation]);
+  }, [selectedCategory, selectedCity, search, userLocation]);
 
   const handleOpenReserve = (donation) => {
     if (!isAuthenticated) {
@@ -125,6 +129,8 @@ export const FindFood = () => {
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         categories={categories}
+        selectedCity={selectedCity}
+        setSelectedCity={setSelectedCity}
       />
 
       {/* Error alert if any */}

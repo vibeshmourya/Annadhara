@@ -370,7 +370,7 @@ export const Register = () => {
                       clearFieldError('name');
                     }}
                     required
-                    placeholder="e.g. Vikram Mehta"
+                    placeholder="e.g. Tarun Sharma"
                     className={`w-full pl-10 pr-4 py-2.5 rounded-xl border ${
                       fieldErrors.name ? 'border-[#D9534F]' : 'border-[#E3EAE5]'
                     } bg-[#F8FAF8] text-sm text-[#26332D] placeholder-[#718078] focus:outline-none focus:ring-2 focus:ring-[#2E7D5B]/30 focus:border-[#2E7D5B] transition-all`}

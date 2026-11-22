@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, MapPin, Building, ArrowRight } from 'lucide-react';
 import { StatusBadge, CategoryBadge, DietaryBadge, FSSAIBadge } from '../common/Badge';
-import { formatIndianDate, resolveImageUrl, DEFAULT_FOOD_IMAGE } from '../../constants/india';
+import { formatIndianDate, resolveImageUrl, getCategoryFallbackImage } from '../../constants/india';
 
 export const DonationCard = ({ donation, onReserveClick }) => {
   const {
@@ -40,11 +40,12 @@ export const DonationCard = ({ donation, onReserveClick }) => {
       {/* Food Image & Top Badges */}
       <div className="relative h-48 w-full bg-stone-100 overflow-hidden">
         <img
-          src={resolveImageUrl(imageUrl)}
+          src={resolveImageUrl(imageUrl, category, title)}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
-            e.target.src = DEFAULT_FOOD_IMAGE;
+            e.target.onerror = null;
+            e.target.src = getCategoryFallbackImage(category, title);
           }}
         />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">

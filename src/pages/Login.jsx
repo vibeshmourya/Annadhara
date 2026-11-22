@@ -187,49 +187,49 @@ export const Login = () => {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickLogin('donor@greengarden.com', 'Donor@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('tarun.donor@annadhara.in', 'Donor@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <Building className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Donor</span>
-                  <span className="text-[10px] text-[#718078] truncate">Bistro</span>
+                  <span className="text-[10px] text-[#718078] truncate">Tarun (Kitchen)</span>
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('ngo@hopeharvest.org', 'Recipient@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('fathima.ngo@annadhara.in', 'Recipient@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Recipient NGO</span>
-                  <span className="text-[10px] text-[#718078] truncate">Hope Harvest</span>
+                  <span className="text-[10px] text-[#718078] truncate">Fathima (Trust)</span>
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('alex@volunteer.org', 'Volunteer@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('swathi.volunteer@annadhara.in', 'Volunteer@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <Truck className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Volunteer</span>
-                  <span className="text-[10px] text-[#718078] truncate">Alex R.</span>
+                  <span className="text-[10px] text-[#718078] truncate">Swathi (Partner)</span>
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('admin@foodbridge.org', 'Admin@123')}
-                className="p-2 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
+                onClick={() => handleQuickLogin('vibesh.admin@annadhara.in', 'Admin@123')}
+                className="p-2.5 rounded-xl border border-[#E3EAE5] bg-[#F8FAF8] hover:bg-[#EAF4EE] text-left transition-colors flex items-center space-x-2"
               >
                 <Shield className="w-3.5 h-3.5 text-[#2E7D5B] shrink-0" />
                 <div className="truncate">
                   <span className="font-bold text-[#26332D] block">Administrator</span>
-                  <span className="text-[10px] text-[#718078] truncate">Sarah J.</span>
+                  <span className="text-[10px] text-[#718078] truncate">Vibesh (Admin)</span>
                 </div>
               </button>
             </div>

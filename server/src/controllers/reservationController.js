@@ -146,14 +146,25 @@ const updateReservationStatus = async (req, res, next) => {
       });
     }
 
-    if (reservation.status !== 'pending' && status !== 'cancelled') {
+    if (reservation.status !== 'pending') {
       return res.status(400).json({
         success: false,
-        message: `Reservation is already marked as ${reservation.status}`,
+        message: `Cannot change status of reservation currently marked as ${reservation.status}. Only pending requests can be approved or rejected.`,
       });
     }
 
     if (status === 'approved') {
+      // Check if donation pickup window has already expired
+      if (
+        reservation.donation.status === 'expired' ||
+        (reservation.donation.pickupEndTime && new Date(reservation.donation.pickupEndTime) <= new Date())
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot approve reservation: the food donation pickup window has expired',
+        });
+      }
+
       reservation.status = 'approved';
       reservation.approvedAt = new Date();
       if (donorNotes) reservation.donorNotes = donorNotes;
@@ -282,6 +293,13 @@ const cancelReservation = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'Cannot cancel a completed reservation that has already been handed over',
+      });
+    }
+
+    if (reservation.status === 'rejected') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel an already rejected reservation',
       });
     }
 

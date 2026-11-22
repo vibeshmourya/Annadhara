@@ -250,8 +250,64 @@ async function runTests() {
     assert(updatedDonation.availableQuantity === 30, '30 meals remaining available (50 - 20 = 30)');
     console.log('  ✅ Delivery successfully verified! Invariant preserved (collected=20, available=30).\n');
 
-    // Step 7: Data Isolation & Role Normalization Check
-    console.log('7. Verifying Role Normalization and Data Isolation...');
+    // Step 7: Code-Free Donor Handover Verification (Donor never asked for code)
+    console.log('7. Verifying Code-Free Donor Handover (Verification code strictly between volunteer and recipient)...');
+    
+    // Create second reservation on remaining 30 meals
+    const resv2Res = await request('/api/reservations', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${recipientToken}` },
+      body: {
+        donationId,
+        requestedQuantity: 10,
+        requestNotes: 'Need 10 meals for day shelter.',
+      },
+    });
+    assert(resv2Res.status === 201, 'Second reservation created');
+    const resv2 = resv2Res.data.data.reservation;
+
+    // Donor approves second reservation
+    await request(`/api/reservations/${resv2._id}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${donorToken}` },
+      body: { status: 'approved' },
+    });
+
+    // 7a. Non-donor (recipient) tries to confirm handover without code -> MUST FAIL (400)
+    const nonDonorFail = await request('/api/handover/confirm', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${recipientToken}` },
+      body: { reservationId: resv2._id },
+    });
+    assert(nonDonorFail.status === 400, 'Non-donor without code rejected with 400');
+    console.log('  ✅ Non-donor cannot confirm handover without code.');
+
+    // 7b. Food Donor confirms handover WITHOUT ANY CODE -> MUST SUCCEED (200)
+    const donorSuccess = await request('/api/handover/confirm', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${donorToken}` },
+      body: {
+        reservationId: resv2._id,
+        notes: 'Handed over directly to volunteer runner at kitchen pickup bay',
+      },
+    });
+    if (donorSuccess.status !== 200) {
+      console.log('donorSuccess error response:', donorSuccess.status, donorSuccess.data);
+    }
+    assert(donorSuccess.status === 200, 'Donor handover confirmation succeeded without code');
+    console.log('  ✅ Donor confirmed food handover with ZERO verification code required.');
+
+    const resv2Updated = await Reservation.findById(resv2._id);
+    assert(resv2Updated.status === 'completed', 'Reservation 2 completed');
+
+    const handoverRecord2 = await HandoverRecord.findOne({ reservation: resv2._id });
+    assert(Boolean(handoverRecord2), 'HandoverRecord 2 created');
+    assert(handoverRecord2.confirmedByDonor === true, 'confirmedByDonor is true');
+    assert(handoverRecord2.verificationMethod === 'donor_confirmation', 'verificationMethod is donor_confirmation');
+    console.log('  ✅ Code-free donor handover verified and persisted.\n');
+
+    // Step 8: Data Isolation & Role Normalization Check
+    console.log('8. Verifying Role Normalization and Data Isolation...');
     const recipientResvs = await request('/api/reservations', {
       headers: { Authorization: `Bearer ${recipientToken}` },
     });
@@ -262,8 +318,8 @@ async function runTests() {
     );
     console.log('  ✅ Recipient data isolation confirmed (no cross-organization leaks).\n');
 
-    // Step 8: Admin User Deactivation Toggle
-    console.log('8. Verifying Admin User Deactivation...');
+    // Step 9: Admin User Deactivation Toggle
+    console.log('9. Verifying Admin User Deactivation...');
     const toggleRes = await request(`/api/admin/users/${donorUser.id}/status`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${adminToken}` },

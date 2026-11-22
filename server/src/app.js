@@ -19,6 +19,7 @@ const handoverRoutes = require('./routes/handoverRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const contributionRoutes = require('./routes/contributionRoutes');
 
 const app = express();
 
@@ -83,6 +84,7 @@ app.use('/api/handover', handoverRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/contributions', contributionRoutes);
 
 // 404 Handler for undefined routes
 app.use('*', (req, res) => {

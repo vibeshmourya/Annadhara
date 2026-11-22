@@ -367,8 +367,8 @@ export const MyDonations = () => {
                     <div className="text-[11px] text-[#718078] flex items-center space-x-3 pt-1">
                       <span>Requested: {new Date(res.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                       {res.status === 'approved' && (
-                        <span className="font-mono font-bold text-[#205B43] bg-[#EAF4EE] px-2 py-0.5 rounded">
-                          Handover Code: {res.handoverCode}
+                        <span className="text-[11px] font-semibold text-[#205B43] bg-[#EAF4EE] px-2 py-0.5 rounded">
+                          Awaiting Volunteer Pickup
                         </span>
                       )}
                     </div>
@@ -407,8 +407,8 @@ export const MyDonations = () => {
                         onClick={() => setSelectedReservationForHandover(res)}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#2E7D5B] hover:bg-[#205B43] shadow-xs flex items-center space-x-1.5"
                       >
-                        <KeyRound className="w-3.5 h-3.5" />
-                        <span>Confirm Handover</span>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Confirm Handover to Volunteer</span>
                       </button>
                     )}
 

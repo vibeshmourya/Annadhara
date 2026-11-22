@@ -91,3 +91,15 @@ export const uploadApi = {
     }),
   validateUrl: (url) => api.post('/upload/validate-url', { url }),
 };
+
+// Verified Contributions (Annadhara Verified Contributions & Recognition)
+export const contributionApi = {
+  getMySummary: () => api.get('/contributions/my-summary'),
+  getMyHistory: (params) => api.get('/contributions/my-history', { params }),
+  getById: (id) => api.get(`/contributions/${id}`),
+  getReceived: (params) => api.get('/contributions/received', { params }),
+  reportDiscrepancy: (id, data) => api.post(`/contributions/${id}/discrepancy`, data),
+  adminGetAll: (params) => api.get('/contributions/admin/all', { params }),
+  adminGetAnalytics: () => api.get('/contributions/admin/analytics'),
+  adminReview: (id, data) => api.patch(`/contributions/admin/${id}/review`, data),
+};

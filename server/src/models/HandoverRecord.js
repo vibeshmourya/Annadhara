@@ -45,7 +45,7 @@ const handoverRecordSchema = new mongoose.Schema(
     },
     verificationMethod: {
       type: String,
-      enum: ['code', 'qr', 'delivery_code', 'manual_confirmation'],
+      enum: ['code', 'qr', 'delivery_code', 'manual_confirmation', 'donor_confirmation'],
       default: 'code',
     },
     deliveryCode: {

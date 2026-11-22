@@ -5,6 +5,7 @@ const HandoverRecord = require('../models/HandoverRecord');
 const { completeHandoverQuantity } = require('../services/donationService');
 const { createNotification } = require('../services/notificationService');
 const { logAudit } = require('../services/auditService');
+const { recordVerifiedContribution } = require('../services/contributionService');
 
 /**
  * Get pickup tasks
@@ -91,35 +92,46 @@ const getPickupTaskById = async (req, res, next) => {
  */
 const claimPickupTask = async (req, res, next) => {
   try {
-    const task = await PickupTask.findById(req.params.id)
+    // Atomic update to eliminate race condition between simultaneous claims
+    const task = await PickupTask.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        volunteer: null,
+        status: 'pending',
+      },
+      {
+        $set: {
+          volunteer: req.user._id,
+          status: 'assigned',
+          assignedAt: new Date(),
+        },
+        $push: {
+          trackingNotes: {
+            status: 'assigned',
+            note: `Claimed by volunteer ${req.user.name}`,
+            updatedBy: req.user._id,
+          },
+        },
+      },
+      { new: true }
+    )
       .populate('donation', 'title')
       .populate('donor')
       .populate('recipient');
 
     if (!task) {
-      return res.status(404).json({
+      const existing = await PickupTask.findById(req.params.id);
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pickup task not found',
+        });
+      }
+      return res.status(409).json({
         success: false,
-        message: 'Pickup task not found',
+        message: 'Pickup task is already assigned to another volunteer or is no longer pending',
       });
     }
-
-    if (task.volunteer) {
-      return res.status(400).json({
-        success: false,
-        message: 'Task is already assigned to another volunteer',
-      });
-    }
-
-    task.volunteer = req.user._id;
-    task.status = 'assigned';
-    task.assignedAt = new Date();
-    task.trackingNotes.push({
-      status: 'assigned',
-      note: `Claimed by volunteer ${req.user.name}`,
-      updatedBy: req.user._id,
-    });
-
-    await task.save();
 
     // Notify donor and recipient
     await createNotification({
@@ -284,78 +296,161 @@ const verifyDelivery = async (req, res, next) => {
       });
     }
 
-    // Verify code: Check either task's deliveryCode or reservation's deliveryCode or handoverCode
-    const expectedDeliveryCode = (task.deliveryCode || task.reservation?.deliveryCode || '').trim().toUpperCase();
-    const providedCode = deliveryCode.trim().toUpperCase();
+    // Verify code: Check either task's deliveryCode, reservation's deliveryCode, derived DL-XXXX, or handoverCode
+    const cleanProvided = deliveryCode.trim().toUpperCase();
+    const cleanNumOnly = cleanProvided.replace(/^(DL|FB)-?/, '');
 
-    if (providedCode !== expectedDeliveryCode) {
+    const validCodes = new Set();
+    if (task.deliveryCode) {
+      const tc = task.deliveryCode.trim().toUpperCase();
+      validCodes.add(tc);
+      validCodes.add(tc.replace(/^(DL|FB)-?/, ''));
+    }
+    if (task.reservation?.deliveryCode) {
+      const rc = task.reservation.deliveryCode.trim().toUpperCase();
+      validCodes.add(rc);
+      validCodes.add(rc.replace(/^(DL|FB)-?/, ''));
+    }
+    if (task.reservation?.handoverCode) {
+      const ho = task.reservation.handoverCode.trim().toUpperCase();
+      validCodes.add(ho); // e.g. FB-7294
+      validCodes.add(`DL-${ho.replace(/^(DL|FB)-?/, '')}`); // e.g. DL-7294
+      validCodes.add(ho.replace(/^(DL|FB)-?/, '')); // e.g. 7294
+    }
+
+    const isMatch = validCodes.has(cleanProvided) || validCodes.has(cleanNumOnly);
+
+    if (!isMatch) {
       return res.status(400).json({
         success: false,
         message: 'Invalid delivery verification code. Please request the correct code from the food recipient.',
       });
     }
 
-    // Mark task completed
-    task.status = 'completed';
-    task.completedAt = new Date();
-    task.deliveryConfirmedAt = new Date();
-    task.deliveryNotes = notes || 'Food delivered and verified by recipient code';
-    task.trackingNotes.push({
-      status: 'completed',
-      note: `Delivery verified with code ${providedCode}. ${notes || ''}`.trim(),
-      updatedBy: req.user._id,
-      timestamp: new Date(),
-    });
-    await task.save();
+    const effectiveDeliveryCode = cleanProvided.startsWith('DL-')
+      ? cleanProvided
+      : (task.deliveryCode || `DL-${cleanNumOnly}`);
+    const providedCode = effectiveDeliveryCode;
 
-    // Mark reservation completed & delivery confirmed
-    if (task.reservation) {
-      await Reservation.findByIdAndUpdate(task.reservation._id, {
-        status: 'completed',
-        deliveryCodeVerified: true,
-        deliveryConfirmedAt: new Date(),
-        completedAt: new Date(),
-      });
+    // Ensure task and reservation have deliveryCode populated
+    if (!task.deliveryCode) {
+      task.deliveryCode = effectiveDeliveryCode;
     }
 
-    // Atomically complete handover quantity in donation
-    if (task.donation) {
-      const quantity = task.reservation?.requestedQuantity || 0;
-      if (quantity > 0) {
-        await completeHandoverQuantity(task.donation._id, quantity);
+    // Transaction & compensation boundary
+    let session = null;
+    let useTransaction = false;
+    try {
+      const topologyType = mongoose.connection.client?.topology?.description?.type;
+      if (topologyType === 'ReplicaSetWithPrimary' || topologyType === 'Sharded') {
+        session = await mongoose.startSession();
+        session.startTransaction();
+        useTransaction = true;
       }
+    } catch (_sessionErr) {
+      session = null;
+      useTransaction = false;
     }
 
-    // Update or create HandoverRecord
-    let handoverRecord = await HandoverRecord.findOne({ reservation: task.reservation?._id });
-    if (handoverRecord) {
-      handoverRecord.confirmedByRecipient = true;
-      handoverRecord.recipientConfirmedAt = new Date();
-      handoverRecord.deliveryCode = providedCode;
-      handoverRecord.deliveryCodeVerified = true;
-      handoverRecord.deliveryConfirmedAt = new Date();
-      handoverRecord.notes = (handoverRecord.notes ? handoverRecord.notes + ' | ' : '') + (notes || 'Delivery code verified');
-      await handoverRecord.save();
-    } else if (task.reservation && task.donation) {
-      await HandoverRecord.create({
-        reservation: task.reservation._id,
-        donation: task.donation._id,
-        donor: task.donor._id,
-        recipient: task.recipient._id,
-        volunteer: task.volunteer?._id || req.user._id,
-        quantityHandedOver: task.reservation.requestedQuantity,
-        unit: task.reservation.unit,
-        handoverCode: task.reservation.handoverCode || providedCode,
-        verificationMethod: 'delivery_code',
-        confirmedByDonor: true,
-        confirmedByRecipient: true,
-        donorConfirmedAt: task.collectedAt || new Date(),
-        recipientConfirmedAt: new Date(),
-        deliveryCode: providedCode,
-        deliveryCodeVerified: true,
-        deliveryConfirmedAt: new Date(),
-        notes: notes || 'Delivery verified by recipient code',
+    let handoverRecord = null;
+    try {
+      // Mark task completed
+      task.status = 'completed';
+      task.completedAt = new Date();
+      task.deliveryConfirmedAt = new Date();
+      task.deliveryNotes = notes || 'Food delivered and verified by recipient code';
+      task.trackingNotes.push({
+        status: 'completed',
+        note: `Delivery verified with code ${providedCode}. ${notes || ''}`.trim(),
+        updatedBy: req.user._id,
+        timestamp: new Date(),
       });
+      await task.save(useTransaction ? { session } : undefined);
+
+      // Mark reservation completed & delivery confirmed
+      if (task.reservation) {
+        await Reservation.findByIdAndUpdate(
+          task.reservation._id,
+          {
+            status: 'completed',
+            deliveryCodeVerified: true,
+            deliveryConfirmedAt: new Date(),
+            completedAt: new Date(),
+          },
+          useTransaction ? { session } : {}
+        );
+      }
+
+      // Atomically complete handover quantity in donation
+      if (task.donation) {
+        const quantity = task.reservation?.requestedQuantity || 0;
+        if (quantity > 0) {
+          await completeHandoverQuantity(
+            task.donation._id,
+            quantity,
+            useTransaction ? { session } : {}
+          );
+        }
+      }
+
+      // Update or create HandoverRecord
+      handoverRecord = await HandoverRecord.findOne({ reservation: task.reservation?._id }).session(
+        useTransaction ? session : null
+      );
+      if (handoverRecord) {
+        handoverRecord.confirmedByRecipient = true;
+        handoverRecord.recipientConfirmedAt = new Date();
+        handoverRecord.deliveryCode = providedCode;
+        handoverRecord.deliveryCodeVerified = true;
+        handoverRecord.deliveryConfirmedAt = new Date();
+        handoverRecord.notes =
+          (handoverRecord.notes ? handoverRecord.notes + ' | ' : '') + (notes || 'Delivery code verified');
+        await handoverRecord.save(useTransaction ? { session } : undefined);
+      } else if (task.reservation && task.donation) {
+        const newRecord = new HandoverRecord({
+          reservation: task.reservation._id,
+          donation: task.donation._id,
+          donor: task.donor._id,
+          recipient: task.recipient._id,
+          volunteer: task.volunteer?._id || req.user._id,
+          quantityHandedOver: task.reservation.requestedQuantity,
+          unit: task.reservation.unit,
+          handoverCode: task.reservation.handoverCode || providedCode,
+          verificationMethod: 'delivery_code',
+          confirmedByDonor: true,
+          confirmedByRecipient: true,
+          donorConfirmedAt: task.collectedAt || new Date(),
+          recipientConfirmedAt: new Date(),
+          deliveryCode: providedCode,
+          deliveryCodeVerified: true,
+          deliveryConfirmedAt: new Date(),
+          notes: notes || 'Delivery verified by recipient code',
+        });
+        await newRecord.save(useTransaction ? { session } : undefined);
+        handoverRecord = newRecord;
+      }
+
+      if (useTransaction && session) {
+        await session.commitTransaction();
+        session.endSession();
+        session = null;
+      }
+    } catch (saveError) {
+      if (useTransaction && session) {
+        await session.abortTransaction();
+        session.endSession();
+        session = null;
+      }
+      throw saveError;
+    }
+
+    // Automatically record verified donor contribution if handover record exists
+    if (handoverRecord) {
+      try {
+        await recordVerifiedContribution(handoverRecord._id, { actorId: req.user._id });
+      } catch (vcErr) {
+        console.warn('[VerifiedContribution] Note on recording contribution:', vcErr.message);
+      }
     }
 
     // Notifications to all parties

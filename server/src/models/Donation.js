@@ -193,6 +193,33 @@ const donationSchema = new mongoose.Schema(
   }
 );
 
+// Strict inventory invariant validation hook:
+// totalQuantity = availableQuantity + reservedQuantity + collectedQuantity
+donationSchema.pre('validate', function (next) {
+  if (
+    this.totalQuantity != null &&
+    this.availableQuantity != null &&
+    this.reservedQuantity != null &&
+    this.collectedQuantity != null
+  ) {
+    const sum = Math.round((this.availableQuantity + this.reservedQuantity + this.collectedQuantity) * 100) / 100;
+    const total = Math.round(this.totalQuantity * 100) / 100;
+    if (Math.abs(sum - total) > 0.001) {
+      return next(
+        new Error(
+          `Inventory invariant violated: available (${this.availableQuantity}) + reserved (${this.reservedQuantity}) + collected (${this.collectedQuantity}) != total (${this.totalQuantity})`
+        )
+      );
+    }
+    if (this.collectedQuantity > this.totalQuantity) {
+      return next(
+        new Error(`Collected quantity (${this.collectedQuantity}) cannot exceed total quantity (${this.totalQuantity})`)
+      );
+    }
+  }
+  next();
+});
+
 // 2dsphere index for location-based distance queries
 donationSchema.index({ 'pickupLocation.location': '2dsphere' });
 donationSchema.index({ status: 1, pickupEndTime: 1, availableQuantity: 1 });

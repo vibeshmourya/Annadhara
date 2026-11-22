@@ -12,24 +12,54 @@ const runExpirationCheck = async () => {
   try {
     const now = new Date();
 
-    // 1. Mark past-deadline donations as expired
-    const expiredDonations = await Donation.updateMany(
-      {
-        pickupEndTime: { $lt: now },
-        status: { $in: ['available', 'partially_reserved'] },
-      },
-      {
-        $set: { status: 'expired' },
-      }
-    );
+    // 1. Find all active donations whose pickup deadline has passed
+    const pastDeadlineDonations = await Donation.find({
+      pickupEndTime: { $lt: now },
+      status: { $in: ['available', 'partially_reserved', 'fully_reserved'] },
+    });
 
-    // 2. Cancel pending unapproved reservations on expired donations
+    for (const donation of pastDeadlineDonations) {
+      // Find all pending (unapproved) reservations for this donation
+      const pendingReservations = await Reservation.find({
+        donation: donation._id,
+        status: 'pending',
+      });
+
+      for (const resv of pendingReservations) {
+        resv.status = 'cancelled';
+        resv.cancellationReason = 'Donation pickup window expired before donor approval';
+        await resv.save();
+      }
+
+      // Check remaining approved reservations
+      const approvedReservations = await Reservation.find({
+        donation: donation._id,
+        status: 'approved',
+      });
+      const activeApprovedQuantity = approvedReservations.reduce((sum, r) => sum + r.requestedQuantity, 0);
+
+      // Reconcile quantities to strictly preserve the inventory invariant:
+      // totalQuantity = availableQuantity + reservedQuantity + collectedQuantity
+      donation.reservedQuantity = activeApprovedQuantity;
+      donation.availableQuantity = Math.max(
+        0,
+        donation.totalQuantity - donation.collectedQuantity - donation.reservedQuantity
+      );
+      donation.status = 'expired';
+      await donation.save();
+    }
+
+    // 2. Cancel orphan pending reservations on expired or missing donations
     const danglingReservations = await Reservation.find({
       status: 'pending',
     }).populate('donation', 'pickupEndTime status');
 
     for (const resv of danglingReservations) {
-      if (!resv.donation || resv.donation.pickupEndTime < now || resv.donation.status === 'expired') {
+      if (
+        !resv.donation ||
+        resv.donation.status === 'expired' ||
+        (resv.donation.pickupEndTime && resv.donation.pickupEndTime < now)
+      ) {
         resv.status = 'cancelled';
         resv.cancellationReason = 'Donation pickup window expired before donor approval';
         await resv.save();

@@ -26,6 +26,13 @@ const connectDB = async () => {
     console.log(`[Database] MongoDB connection established successfully [Status: ${getDbStatus()}] at ${uri}`);
   } catch (err) {
     console.warn(`[Database] Could not connect to external MongoDB at ${uri}: ${err.message}`);
+
+    // In production, strictly fail fast instead of starting a volatile in-memory instance
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[Database] FATAL: Production environment cannot fallback to in-memory MongoDB. Halting process.');
+      process.exit(1);
+    }
+
     console.log('[Database] Starting in-memory MongoDB instance for development...');
 
     try {

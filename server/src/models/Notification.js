@@ -31,6 +31,10 @@ const notificationSchema = new mongoose.Schema(
         'pickup_collected',
         'pickup_completed',
         'handover_success',
+        'contribution_verified',
+        'recognition_milestone',
+        'contribution_reversed',
+        'contribution_under_review',
         'deadline_warning',
         'org_verification',
         'system',
@@ -43,7 +47,7 @@ const notificationSchema = new mongoose.Schema(
     },
     relatedModel: {
       type: String,
-      enum: ['Donation', 'Reservation', 'PickupTask', 'Organization', 'User', null],
+      enum: ['Donation', 'Reservation', 'PickupTask', 'Organization', 'User', 'VerifiedContribution', null],
       default: null,
     },
     isRead: {

@@ -27,6 +27,7 @@ import {
   DEFAULT_FOOD_IMAGE,
   resolveImageUrl,
 } from '../constants/india';
+import { reverseGeocodeCoordinates } from '../utils/reverseGeocode';
 
 // Common non-vegetarian indicator keywords for mismatch warning
 const NON_VEG_REGEX = /\b(egg|eggs|chicken|mutton|fish|meat|beef|pork|prawn|prawns|seafood|bacon|ham|crab|crabs|duck|keema|gosht|murgh)\b/i;
@@ -136,19 +137,38 @@ export const CreateDonation = () => {
       return;
     }
     setDetectingLocation(true);
-    setGpsStatus('Detecting device coordinates via GPS...');
+    setGpsStatus('Detecting device GPS coordinates...');
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setDeviceLocation({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
-        setDetectingLocation(false);
-        setGpsStatus(`GPS locked: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)} ✓`);
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setDeviceLocation({ lat, lng });
+        setGpsStatus(`GPS coordinates locked (${lat.toFixed(4)}, ${lng.toFixed(4)}). Auto-detecting address...`);
+
+        try {
+          const resolved = await reverseGeocodeCoordinates(lat, lng);
+          setFormData((prev) => ({
+            ...prev,
+            street: resolved.street || prev.street,
+            areaLocality: resolved.areaLocality || prev.areaLocality,
+            city: resolved.city || prev.city,
+            district: resolved.district || prev.district,
+            state: resolved.state || prev.state,
+            postalCode: resolved.postalCode || prev.postalCode,
+          }));
+
+          const label = resolved.areaLocality || resolved.city || 'Detected Area';
+          setGpsStatus(`📍 Address auto-detected: ${label} (${lat.toFixed(4)}, ${lng.toFixed(4)}) ✓`);
+        } catch (geoErr) {
+          console.warn('Reverse geocode error:', geoErr);
+          setGpsStatus(`GPS locked: ${lat.toFixed(4)}, ${lng.toFixed(4)} ✓ (Enter address details if needed)`);
+        } finally {
+          setDetectingLocation(false);
+        }
       },
-      () => {
+      (err) => {
         setDetectingLocation(false);
-        setGpsStatus('Location permission denied or unavailable. Using city center.');
+        setGpsStatus(`Location unavailable or denied (${err.message || 'permission error'}).`);
       },
       { timeout: 10000, enableHighAccuracy: true }
     );

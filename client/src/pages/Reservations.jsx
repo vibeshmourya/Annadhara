@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarCheck, Clock, MapPin, Building, KeyRound, AlertCircle, XCircle, QrCode } from 'lucide-react';
-import { reservationApi } from '../api/endpoints';
+import { CalendarCheck, Clock, MapPin, Building, KeyRound, AlertCircle, XCircle, QrCode, Flag } from 'lucide-react';
+import { reservationApi, contributionApi } from '../api/endpoints';
 import { StatusBadge } from '../components/common/Badge';
-import { ConfirmationDialog } from '../components/common/Modal';
+import { ConfirmationDialog, Modal } from '../components/common/Modal';
 import { QrCodeModal } from '../components/common/QrCodeModal';
 import { LoadingSpinner, EmptyState } from '../components/common/StatCard';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,12 @@ export const Reservations = () => {
   const [selectedForCancel, setSelectedForCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Discrepancy report state (Recipient reporting issue on completed food delivery)
+  const [discrepancyReservation, setDiscrepancyReservation] = useState(null);
+  const [discrepancyReason, setDiscrepancyReason] = useState('');
+  const [discrepancyLoading, setDiscrepancyLoading] = useState(false);
+  const [discrepancySuccess, setDiscrepancySuccess] = useState(false);
 
   // QR Modal state
   const [qrModal, setQrModal] = useState({
@@ -63,6 +69,28 @@ export const Reservations = () => {
     }
   };
 
+  const handleReportDiscrepancySubmit = async (e) => {
+    e.preventDefault();
+    if (!discrepancyReservation || !discrepancyReason.trim()) return;
+
+    try {
+      setDiscrepancyLoading(true);
+      await contributionApi.reportDiscrepancy(discrepancyReservation._id, {
+        reason: discrepancyReason.trim(),
+      });
+      setDiscrepancySuccess(true);
+      setTimeout(() => {
+        setDiscrepancyReservation(null);
+        setDiscrepancyReason('');
+        setDiscrepancySuccess(false);
+      }, 1500);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit discrepancy report');
+    } finally {
+      setDiscrepancyLoading(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner text="Loading reservations..." />;
 
   return (
@@ -103,6 +131,10 @@ export const Reservations = () => {
             const isApproved = res.status === 'approved';
             const isPending = res.status === 'pending';
             const isCompleted = res.status === 'completed';
+            const userRole = (user?.role || '').toLowerCase();
+            const isDonorUser = isDonor || userRole === 'donor' || (user?._id && (res.donor?._id === user._id || res.donor === user._id));
+            const isRecipientUser = isRecipient || userRole === 'recipient' || (user?._id && (res.recipient?._id === user._id || res.recipient === user._id));
+            const showDeliveryCode = isApproved && !isDonorUser && isRecipientUser;
 
             return (
               <div
@@ -169,73 +201,80 @@ export const Reservations = () => {
                     )}
                   </div>
 
-                  {/* Verification Codes for Recipient */}
-                  {isApproved && (
-                    <div className="space-y-2">
-                      <div className="bg-[#EAF4EE] p-3 rounded-xl border border-[#2E7D5B]/20 flex items-center justify-between">
-                        <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#205B43] block">
-                            Stage 1: Pickup Code (Donor)
-                          </span>
-                          <span className="text-lg font-mono font-black text-[#205B43]">
-                            {res.handoverCode}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setQrModal({
-                                isOpen: true,
-                                code: res.handoverCode,
-                                type: 'pickup',
-                                itemTitle: res.donation?.title,
-                                quantityText: `${res.requestedQuantity} ${res.unit}`,
-                              })
-                            }
-                            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white text-[#205B43] border border-[#2E7D5B]/30 hover:bg-stone-50 transition-colors shadow-2xs"
-                          >
-                            <QrCode className="w-3.5 h-3.5" />
-                            <span>QR</span>
-                          </button>
-                        </div>
+                  {/* Recipient Delivery Verification Code (Only shown to RECIPIENT, strictly between Volunteer and Recipient) */}
+                  {showDeliveryCode && (
+                    <div className="bg-amber-50 p-3.5 rounded-xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
+                          Delivery Verification Code (For Volunteer)
+                        </span>
+                        <span className="text-xl font-mono font-black text-amber-950 tracking-wider">
+                          {res.deliveryCode || `DL-${res.handoverCode?.replace('FB-', '') || '7294'}`}
+                        </span>
+                        <p className="text-[11px] text-amber-800/80 mt-0.5">
+                          Share this code or show QR to the volunteer when they deliver the food to your location.
+                        </p>
                       </div>
-
-                      <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-center justify-between">
-                        <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
-                            Stage 2: Delivery Verification Code
-                          </span>
-                          <span className="text-xl font-mono font-black text-amber-900 tracking-wider">
-                            {res.deliveryCode || `DL-${res.handoverCode?.replace('FB-', '') || '7294'}`}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setQrModal({
-                                isOpen: true,
-                                code: res.deliveryCode || `DL-${res.handoverCode?.replace('FB-', '') || '7294'}`,
-                                type: 'delivery',
-                                itemTitle: res.donation?.title,
-                                quantityText: `${res.requestedQuantity} ${res.unit}`,
-                              })
-                            }
-                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-200 text-amber-950 hover:bg-amber-300 transition-colors shadow-2xs"
-                          >
-                            <QrCode className="w-3.5 h-3.5" />
-                            <span>Show Delivery QR</span>
-                          </button>
-                        </div>
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setQrModal({
+                              isOpen: true,
+                              code: res.deliveryCode || `DL-${res.handoverCode?.replace('FB-', '') || '7294'}`,
+                              type: 'delivery',
+                              itemTitle: res.donation?.title,
+                              quantityText: `${res.requestedQuantity} ${res.unit}`,
+                            })
+                          }
+                          className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-200 text-amber-950 hover:bg-amber-300 transition-colors shadow-2xs"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span>Show Delivery QR</span>
+                        </button>
                       </div>
                     </div>
                   )}
 
+                  {/* Donor View: No code or QR displayed to food donor */}
+                  {isApproved && isDonorUser && (
+                    <div className="bg-[#EAF4EE] p-3.5 rounded-xl border border-[#2E7D5B]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#205B43] block">
+                          Status: Approved for Pickup
+                        </span>
+                        <p className="text-xs text-[#205B43] font-medium mt-0.5">
+                          Awaiting volunteer runner collection. No verification code is required from the food donor.
+                        </p>
+                      </div>
+                      <Link
+                        to="/my-donations"
+                        className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-[#205B43] border border-[#2E7D5B]/30 hover:bg-stone-50 transition-colors shadow-2xs shrink-0"
+                      >
+                        <span>Manage in My Donations →</span>
+                      </Link>
+                    </div>
+                  )}
+
                   {isCompleted && (
-                    <div className="bg-[#EAF4EE] p-3 rounded-xl border border-[#2E7D5B]/30 flex items-center space-x-2 text-xs font-semibold text-[#205B43]">
-                      <span className="w-2 h-2 rounded-full bg-[#2E7D5B]" />
-                      <span>Delivery Confirmed & Verified by Recipient Code ✓</span>
+                    <div className="bg-[#EAF4EE] p-3 rounded-xl border border-[#2E7D5B]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold text-[#205B43]">
+                      <div className="flex items-center space-x-2">
+                        <span className="w-2 h-2 rounded-full bg-[#2E7D5B]" />
+                        <span>Delivery Confirmed & Verified by Recipient Code ✓</span>
+                      </div>
+                      {isRecipient && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDiscrepancyReservation(res);
+                            setDiscrepancyReason('');
+                            setDiscrepancySuccess(false);
+                          }}
+                          className="text-[11px] text-[#718078] hover:text-[#D9534F] underline self-start sm:self-auto"
+                        >
+                          Report Discrepancy
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -313,6 +352,66 @@ export const Reservations = () => {
         itemTitle={qrModal.itemTitle}
         quantityText={qrModal.quantityText}
       />
+
+      {/* Recipient Discrepancy Reporting Modal */}
+      {discrepancyReservation && (
+        <Modal
+          isOpen={!!discrepancyReservation}
+          onClose={() => setDiscrepancyReservation(null)}
+          title="Report Food Receipt Discrepancy"
+          maxWidth="max-w-md"
+        >
+          {discrepancySuccess ? (
+            <div className="text-center py-4 space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-[#EAF4EE] text-[#2E7D5B] flex items-center justify-center mx-auto">
+                <CalendarCheck className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-[#26332D]">Discrepancy Report Submitted</h4>
+              <p className="text-xs text-[#718078]">
+                Platform administrators have been notified to review this contribution record.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleReportDiscrepancySubmit} className="space-y-4 text-xs">
+              <div className="p-3 bg-[#F8FAF8] rounded-xl border border-stone-200/70 space-y-1">
+                <div><strong className="text-[#26332D]">Food Item:</strong> {discrepancyReservation.donation?.title}</div>
+                <div><strong className="text-[#26332D]">Quantity:</strong> {discrepancyReservation.requestedQuantity} {discrepancyReservation.unit}</div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-[#26332D] mb-1">
+                  Describe Observed Discrepancy <span className="text-[#D9534F]">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="e.g. Quantity received was 10 kg instead of 20 kg, or packaging was broken upon delivery."
+                  value={discrepancyReason}
+                  onChange={(e) => setDiscrepancyReason(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs focus:ring-2 focus:ring-[#2E7D5B]/30"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => setDiscrepancyReservation(null)}
+                  className="px-4 py-2 rounded-xl text-stone-600 bg-stone-100 hover:bg-stone-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={discrepancyLoading}
+                  className="px-4 py-2 rounded-xl font-bold text-white bg-[#D9534F] hover:bg-red-700"
+                >
+                  {discrepancyLoading ? 'Submitting...' : 'Submit Report'}
+                </button>
+              </div>
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };

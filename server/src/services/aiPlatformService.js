@@ -338,6 +338,70 @@ const getAdminData = async () => {
 };
 
 /**
+ * Retrieves public surplus food listings available for rescue
+ */
+const getAvailableSurplusDonations = async (limit = 5) => {
+  const simulatedListings = [
+    {
+      title: 'Steamed Rice & Dal Combo',
+      category: 'cooked_meals',
+      dietaryType: 'VEGETARIAN',
+      availableQuantity: 40,
+      unit: 'meals',
+      status: 'available',
+    },
+    {
+      title: 'Fresh Bakery Bread & Rolls',
+      category: 'bakery_items',
+      dietaryType: 'VEGETARIAN',
+      availableQuantity: 20,
+      unit: 'packets',
+      status: 'available',
+    },
+    {
+      title: 'Assorted Seasonal Fruits & Veggies',
+      category: 'fruits_vegetables',
+      dietaryType: 'VEGAN',
+      availableQuantity: 15,
+      unit: 'kg',
+      status: 'available',
+    },
+  ];
+
+  if (!isDbConnected()) {
+    return simulatedListings;
+  }
+
+  try {
+    const listings = await Donation.find({
+      status: { $in: ['available', 'partially_reserved'] },
+      availableQuantity: { $gt: 0 },
+    })
+      .select('title category dietaryType availableQuantity unit pickupEndTime status city')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    if (!listings || listings.length === 0) {
+      return simulatedListings;
+    }
+
+    return listings.map((d) => ({
+      title: d.title,
+      category: d.category,
+      dietaryType: d.dietaryType,
+      availableQuantity: d.availableQuantity,
+      unit: d.unit,
+      status: d.status,
+      pickupEndTime: d.pickupEndTime,
+    }));
+  } catch (err) {
+    console.warn('[AIPlatformService] Error querying surplus listings:', err.message);
+    return simulatedListings;
+  }
+};
+
+/**
  * Top-level dispatcher enforcing role-based data isolation
  *
  * @param {Object} user - Authenticated user from verified JWT
@@ -356,17 +420,23 @@ const getAuthorizedPlatformContext = async (user) => {
   switch (roleUpper) {
     case 'DONOR':
       return await getDonorData(userId, isTest);
-    case 'RECIPIENT':
-      return await getRecipientData(userId, orgId, isTest);
+    case 'RECIPIENT': {
+      const recipientData = await getRecipientData(userId, orgId, isTest);
+      recipientData.availableSurplus = await getAvailableSurplusDonations(4);
+      return recipientData;
+    }
     case 'VOLUNTEER':
       return await getVolunteerData(userId, isTest);
     case 'ADMIN':
       return await getAdminData();
-    default:
+    default: {
+      const surplus = await getAvailableSurplusDonations(4);
       return {
         summary: { role: 'MEMBER', message: 'Standard platform member without specialized role data' },
+        availableSurplus: surplus,
         isSimulated: true,
       };
+    }
   }
 };
 
@@ -375,6 +445,7 @@ module.exports = {
   getRecipientData,
   getVolunteerData,
   getAdminData,
+  getAvailableSurplusDonations,
   getAuthorizedPlatformContext,
   isDbConnected,
 };

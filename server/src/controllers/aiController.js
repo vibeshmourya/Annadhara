@@ -24,6 +24,152 @@ const {
 const mongoose = require('mongoose');
 const AIConversation = require('../models/AIConversation');
 
+const ACTION_LABELS = {
+  CREATE_DONATION: {
+    en: 'Publish Food Donation',
+    kn: 'ಆಹಾರ ದಾನ ಪ್ರಕಟಿಸಿ',
+    hi: 'भोजन दान प्रकाशित करें',
+  },
+  FIND_FOOD: {
+    en: 'Browse Food Listings',
+    kn: 'ಆಹಾರ ಪಟ್ಟಿಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಿ',
+    hi: 'भोजन सूची देखें',
+  },
+  MY_DONATIONS: {
+    en: 'My Food Listings',
+    kn: 'ನನ್ನ ಆಹಾರ ಪಟ್ಟಿಗಳು',
+    hi: 'मेरे भोजन दान',
+  },
+  RESERVATIONS: {
+    en: 'My Reservations',
+    kn: 'ನನ್ನ ಕಾಯ್ದಿರಿಸುವಿಕೆಗಳು',
+    hi: 'मेरे आरक्षण',
+  },
+  PICKUPS: {
+    en: 'View Pickup Missions',
+    kn: 'ಪಿಕಪ್ ಕಾರ್ಯಾಚರಣೆಗಳು',
+    hi: 'पिकअप कार्य देखें',
+  },
+  ADMIN_PANEL: {
+    en: 'Admin Panel',
+    kn: 'ನಿರ್ವಾಹಕ ಫಲಕ',
+    hi: 'व्यवस्थापक पैनल',
+  },
+};
+
+/**
+ * Generates context-aware interactive actions based on query, role and intent
+ */
+const generateSuggestedActions = ({ message, role, intent, language = 'en' }) => {
+  const actions = [];
+  const lowerMsg = (message || '').toLowerCase();
+  const lang = ['en', 'kn', 'hi'].includes(language) ? language : 'en';
+
+  const isDonateQuery =
+    lowerMsg.includes('donate') ||
+    lowerMsg.includes('publish') ||
+    lowerMsg.includes('create') ||
+    lowerMsg.includes('listing') ||
+    lowerMsg.includes('surplus food') ||
+    lowerMsg.includes('ದಾನ') ||
+    lowerMsg.includes('ಪ್ರಕಟಿಸು') ||
+    lowerMsg.includes('दान') ||
+    lowerMsg.includes('लिस्टिंग');
+
+  const isFindQuery =
+    lowerMsg.includes('find') ||
+    lowerMsg.includes('available') ||
+    lowerMsg.includes('reserve') ||
+    lowerMsg.includes('request') ||
+    lowerMsg.includes('browse') ||
+    lowerMsg.includes('food') ||
+    lowerMsg.includes('meal') ||
+    lowerMsg.includes('ಕಂಡುಹಿಡಿ') ||
+    lowerMsg.includes('ಲಭ್ಯವಿರುವ') ||
+    lowerMsg.includes('खोज') ||
+    lowerMsg.includes('आरक्षण');
+
+  const isPickupQuery =
+    lowerMsg.includes('pickup') ||
+    lowerMsg.includes('deliver') ||
+    lowerMsg.includes('mission') ||
+    lowerMsg.includes('transport') ||
+    lowerMsg.includes('claim') ||
+    lowerMsg.includes('ಪಿಕಪ್') ||
+    lowerMsg.includes('ಸಾರಿಗೆ') ||
+    lowerMsg.includes('पिकअप') ||
+    lowerMsg.includes('परिवहन');
+
+  const isReservationQuery =
+    lowerMsg.includes('my reservation') ||
+    lowerMsg.includes('reservation') ||
+    lowerMsg.includes('code') ||
+    lowerMsg.includes('handover') ||
+    lowerMsg.includes('otp');
+
+  const isAdminQuery =
+    lowerMsg.includes('admin') ||
+    lowerMsg.includes('verify ngo') ||
+    lowerMsg.includes('organization verification') ||
+    lowerMsg.includes('audit');
+
+  if (isDonateQuery && (role === 'DONOR' || role === 'MEMBER')) {
+    actions.push({
+      actionType: 'NAVIGATE',
+      label: ACTION_LABELS.CREATE_DONATION[lang] || ACTION_LABELS.CREATE_DONATION.en,
+      path: '/create-donation',
+      icon: 'PlusCircle',
+    });
+  }
+
+  if (isFindQuery && (role === 'RECIPIENT' || role === 'MEMBER' || role === 'VOLUNTEER')) {
+    actions.push({
+      actionType: 'NAVIGATE',
+      label: ACTION_LABELS.FIND_FOOD[lang] || ACTION_LABELS.FIND_FOOD.en,
+      path: '/find-food',
+      icon: 'Search',
+    });
+  }
+
+  if (isReservationQuery && (role === 'RECIPIENT' || role === 'DONOR')) {
+    actions.push({
+      actionType: 'NAVIGATE',
+      label: ACTION_LABELS.RESERVATIONS[lang] || ACTION_LABELS.RESERVATIONS.en,
+      path: '/reservations',
+      icon: 'Calendar',
+    });
+  }
+
+  if (role === 'DONOR' && (lowerMsg.includes('my ') || lowerMsg.includes('listings') || lowerMsg.includes('status'))) {
+    actions.push({
+      actionType: 'NAVIGATE',
+      label: ACTION_LABELS.MY_DONATIONS[lang] || ACTION_LABELS.MY_DONATIONS.en,
+      path: '/my-donations',
+      icon: 'Package',
+    });
+  }
+
+  if ((isPickupQuery || role === 'VOLUNTEER') && (role === 'VOLUNTEER' || role === 'ADMIN')) {
+    actions.push({
+      actionType: 'NAVIGATE',
+      label: ACTION_LABELS.PICKUPS[lang] || ACTION_LABELS.PICKUPS.en,
+      path: '/pickups',
+      icon: 'Truck',
+    });
+  }
+
+  if ((isAdminQuery || role === 'ADMIN') && role === 'ADMIN') {
+    actions.push({
+      actionType: 'NAVIGATE',
+      label: ACTION_LABELS.ADMIN_PANEL[lang] || ACTION_LABELS.ADMIN_PANEL.en,
+      path: '/admin',
+      icon: 'ShieldCheck',
+    });
+  }
+
+  return actions;
+};
+
 /**
  * Handle authenticated AI chat message
  * POST /api/ai/chat
@@ -169,10 +315,18 @@ const chat = async (req, res, next) => {
       conversationHistory: effectiveHistory,
     });
 
-    // 12. Security guard: redact any credentials or keys before storing or outputting
+    // 12. Determine suggested actions
+    const actions = generateSuggestedActions({
+      message: cleanMessage,
+      role,
+      intent,
+      language: selectedLanguage,
+    });
+
+    // 13. Security guard: redact any credentials or keys before storing or outputting
     const safeOutputMessage = redactSensitiveOutput(completion.message);
 
-    // 13. Persist message turn if conversation document is available
+    // 14. Persist message turn if conversation document is available
     if (conversation && !isTest) {
       try {
         conversation.language = selectedLanguage;
@@ -187,6 +341,7 @@ const chat = async (req, res, next) => {
           content: safeOutputMessage,
           intent,
           citations,
+          actions,
           hasPlatformData: Boolean(platformContext),
           timestamp: new Date(),
         });
@@ -208,6 +363,7 @@ const chat = async (req, res, next) => {
         language: selectedLanguage,
         conversationId: activeConversationId,
         citations,
+        actions,
         hasPlatformData: Boolean(platformContext),
         timestamp: new Date().toISOString(),
       },
@@ -406,10 +562,103 @@ const getStatus = async (req, res) => {
   });
 };
 
+/**
+ * Submit feedback on an AI message
+ * POST /api/ai/feedback
+ */
+const submitFeedback = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const { conversationId, messageId, rating } = req.body;
+
+    if (!rating || !['helpful', 'unhelpful'].includes(rating)) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be either 'helpful' or 'unhelpful'",
+      });
+    }
+
+    if (
+      isDbConnected() &&
+      conversationId &&
+      mongoose.Types.ObjectId.isValid(conversationId) &&
+      !req.user?.isTestUser
+    ) {
+      const conversation = await AIConversation.findOne({ _id: conversationId, user: userId });
+      if (conversation && Array.isArray(conversation.messages)) {
+        let targetMsg = null;
+        if (messageId && mongoose.Types.ObjectId.isValid(messageId)) {
+          targetMsg = conversation.messages.id(messageId);
+        } else {
+          // Default to the last assistant message
+          targetMsg = [...conversation.messages].reverse().find((m) => m.role === 'assistant');
+        }
+
+        if (targetMsg) {
+          targetMsg.feedback = {
+            rating,
+            createdAt: new Date(),
+          };
+          await conversation.save();
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Feedback recorded successfully. Thank you for helping improve Annadhara AI!',
+      data: { rating },
+    });
+  } catch (err) {
+    console.error('[AIController submitFeedback Error]:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to record feedback',
+    });
+  }
+};
+
+/**
+ * Clear all messages in a conversation
+ * POST /api/ai/conversations/:id/clear
+ */
+const clearConversationMessages = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'Conversation ID required' });
+    }
+
+    if (isDbConnected() && mongoose.Types.ObjectId.isValid(id) && !req.user?.isTestUser) {
+      const conv = await AIConversation.findOne({ _id: id, user: userId });
+      if (conv) {
+        conv.messages = [];
+        await conv.save();
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Conversation history cleared successfully',
+    });
+  } catch (err) {
+    console.error('[AIController clearConversationMessages Error]:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to clear conversation history',
+    });
+  }
+};
+
 module.exports = {
   chat,
   getConversations,
   getConversationById,
   deleteConversation,
+  clearConversationMessages,
+  submitFeedback,
   getStatus,
+  generateSuggestedActions,
 };

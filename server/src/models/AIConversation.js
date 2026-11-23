@@ -33,6 +33,23 @@ const aiMessageSchema = new mongoose.Schema({
     default: 'GENERAL_CHAT',
   },
   citations: [aiCitationSchema],
+  actions: [
+    {
+      actionType: { type: String, default: 'NAVIGATE' },
+      label: { type: String, default: '' },
+      path: { type: String, default: '' },
+      icon: { type: String, default: '' },
+    },
+  ],
+  feedback: {
+    rating: {
+      type: String,
+      enum: ['helpful', 'unhelpful'],
+    },
+    createdAt: {
+      type: Date,
+    },
+  },
   hasPlatformData: {
     type: Boolean,
     default: false,

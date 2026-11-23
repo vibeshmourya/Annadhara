@@ -29,6 +29,7 @@ const {
   getRecipientData,
   getVolunteerData,
   getAdminData,
+  getAvailableSurplusDonations,
   getAuthorizedPlatformContext,
 } = require('../src/services/aiPlatformService');
 const {
@@ -50,6 +51,9 @@ const {
   getConversations,
   getConversationById,
   deleteConversation,
+  clearConversationMessages,
+  submitFeedback,
+  generateSuggestedActions,
 } = require('../src/controllers/aiController');
 const mongoose = require('mongoose');
 const app = require('../src/app');
@@ -854,6 +858,136 @@ async function runAiTests() {
 
   const freeTierTavilyCfg = getTavilyConfig();
   assert(freeTierTavilyCfg.maxResults <= 3, `Tavily results cap optimized for free tier (<= 3): ${freeTierTavilyCfg.maxResults}`);
+
+  console.log('\n--- Test Suite 12: Chatbot Improvements & Action Automation ---');
+  // 12.1 Suggested Actions for Donor Listing
+  const donorActions = generateSuggestedActions({
+    message: 'How can I publish and donate surplus food?',
+    role: 'DONOR',
+    language: 'en',
+  });
+  assert(Array.isArray(donorActions), 'generateSuggestedActions returns array');
+  assert(donorActions.length > 0, 'Generates at least one action for food donation inquiry');
+  assert(donorActions[0].path === '/create-donation', 'Directs donor to /create-donation');
+  assert(donorActions[0].icon === 'PlusCircle', 'Uses PlusCircle icon for food listing');
+
+  // 12.2 Suggested Actions for Recipient Discovery
+  const recipientActions = generateSuggestedActions({
+    message: 'Where can I find available surplus meals near me?',
+    role: 'RECIPIENT',
+    language: 'en',
+  });
+  assert(recipientActions.some((a) => a.path === '/find-food'), 'Directs recipient to /find-food');
+
+  // 12.3 Suggested Actions for Volunteer Deliveries
+  const volunteerActions = generateSuggestedActions({
+    message: 'What pickup missions can I transport today?',
+    role: 'VOLUNTEER',
+    language: 'en',
+  });
+  assert(volunteerActions.some((a) => a.path === '/pickups'), 'Directs volunteer to /pickups');
+
+  // 12.4 Multilingual Action Localization
+  const kannadaActions = generateSuggestedActions({
+    message: 'ಆಹಾರ ದಾನವನ್ನು ಹೇಗೆ ಪ್ರಕಟಿಸುವುದು?',
+    role: 'DONOR',
+    language: 'kn',
+  });
+  assert(kannadaActions.some((a) => a.label.includes('ಆಹಾರ ದಾನ')), 'Kannada query produces localized action label');
+
+  const hindiActions = generateSuggestedActions({
+    message: 'अतिरिक्त भोजन कैसे दान करें?',
+    role: 'DONOR',
+    language: 'hi',
+  });
+  assert(hindiActions.some((a) => a.label.includes('भोजन दान')), 'Hindi query produces localized action label');
+
+  // 12.5 Public Surplus Food Discovery Service
+  const surplusListings = await getAvailableSurplusDonations(3);
+  assert(Array.isArray(surplusListings), 'getAvailableSurplusDonations returns array');
+  assert(surplusListings.length > 0, 'Surplus listings are available for chatbot queries');
+  assert(typeof surplusListings[0].title === 'string', 'Surplus listing includes food title');
+  assert(typeof surplusListings[0].availableQuantity === 'number', 'Surplus listing includes available quantity');
+
+  // 12.6 Feedback Submission Validation
+  let feedbackCode = null;
+  let feedbackBody = null;
+  await submitFeedback(
+    {
+      body: { rating: 'helpful', messageId: 'ai_123' },
+      user: { _id: '000000000000000000000001', isTestUser: true },
+    },
+    {
+      status: (c) => {
+        feedbackCode = c;
+        return {
+          json: (b) => {
+            feedbackBody = b;
+          },
+        };
+      },
+    }
+  );
+  assert(feedbackCode === 200, 'Valid feedback returns HTTP 200');
+  assert(feedbackBody.success === true, 'Feedback response indicates success: true');
+  assert(feedbackBody.data.rating === 'helpful', 'Feedback records helpful rating');
+
+  let invalidFeedbackCode = null;
+  await submitFeedback(
+    {
+      body: { rating: 'neutral' },
+      user: { _id: '000000000000000000000001', isTestUser: true },
+    },
+    {
+      status: (c) => {
+        invalidFeedbackCode = c;
+        return {
+          json: () => {},
+        };
+      },
+    }
+  );
+  assert(invalidFeedbackCode === 400, 'Invalid rating string rejected with HTTP 400');
+
+  // 12.7 Conversation Clear Messages Endpoint
+  let clearCode = null;
+  let clearBody = null;
+  await clearConversationMessages(
+    {
+      params: { id: '000000000000000000000001' },
+      user: { _id: '000000000000000000000001', isTestUser: true },
+    },
+    {
+      status: (c) => {
+        clearCode = c;
+        return {
+          json: (b) => {
+            clearBody = b;
+          },
+        };
+      },
+    }
+  );
+  assert(clearCode === 200, 'Clear conversation messages returns HTTP 200');
+  assert(clearBody.success === true, 'Clear conversation response indicates success: true');
+
+  // 12.8 Chat Controller End-to-End includes Actions
+  let chatActionsBody = null;
+  await chat(
+    {
+      body: { message: 'How do I donate food surplus?' },
+      user: { _id: '000000000000000000000001', role: 'DONOR', isTestUser: true },
+    },
+    {
+      status: () => ({
+        json: (b) => {
+          chatActionsBody = b;
+        },
+      }),
+    }
+  );
+  assert(Array.isArray(chatActionsBody?.data?.actions), 'Chat response contains actions array');
+  assert(chatActionsBody?.data?.actions.length > 0, 'Chat response populated with suggested actions');
 
   console.log('\n================================================================');
   console.log(`🎉 ALL TESTS PASSED: ${passedTests}/${totalTests} tests succeeded`);

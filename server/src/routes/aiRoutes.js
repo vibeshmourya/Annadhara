@@ -12,6 +12,8 @@ const {
   getConversations,
   getConversationById,
   deleteConversation,
+  clearConversationMessages,
+  submitFeedback,
 } = require('../controllers/aiController');
 const { protect } = require('../middleware/auth');
 const { createAiRateLimiter } = require('../middleware/aiRateLimiter');
@@ -74,5 +76,9 @@ router.get('/status', browsingLimiter, getStatus);
 router.get('/conversations', browsingLimiter, getConversations);
 router.get('/conversations/:id', browsingLimiter, getConversationById);
 router.delete('/conversations/:id', browsingLimiter, deleteConversation);
+router.post('/conversations/:id/clear', browsingLimiter, clearConversationMessages);
+
+// Feedback endpoint
+router.post('/feedback', browsingLimiter, submitFeedback);
 
 module.exports = router;

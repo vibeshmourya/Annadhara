@@ -188,13 +188,40 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Hero Image
-            Container(
+            SizedBox(
               height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.lightGreen,
-                image: DecorationImage(
-                  image: NetworkImage(ApiConstants.resolveImageUrl(don.imageUrl, don.category, don.title)),
-                  fit: BoxFit.cover,
+              width: double.infinity,
+              child: Image.network(
+                ApiConstants.resolveImageUrl(don.imageUrl, don.category, don.title),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 200,
+                  color: AppColors.lightGreen,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.restaurant_rounded, size: 48, color: AppColors.primaryGreen.withValues(alpha: 0.6)),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Annadhara Food Rescue',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryGreen.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Surplus Food • Shared Hope',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.secondaryText.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

@@ -80,7 +80,7 @@ class _AnnadharaAiScreenState extends State<AnnadharaAiScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.between,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Row(
                           children: [

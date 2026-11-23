@@ -124,7 +124,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                   fontSize: 22,
                   fontFamily: 'monospace',
                   fontWeight: FontWeight.w900,
-                  color: Colors.amber.shade950,
+                  color: Colors.amber.shade900,
                   letterSpacing: 2,
                 ),
               ),
@@ -410,7 +410,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                                               style: TextStyle(
                                                 fontSize: 17,
                                                 fontWeight: FontWeight.w900,
-                                                color: Colors.amber.shade950,
+                                                color: Colors.amber.shade900,
                                                 letterSpacing: 2,
                                                 fontFamily: 'monospace',
                                               ),

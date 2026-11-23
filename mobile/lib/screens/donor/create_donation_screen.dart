@@ -44,8 +44,9 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
   // Image upload and selection state
   File? _selectedImageFile;
   String _imageUrl =
-      'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80';
+      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80';
   bool _uploadingImage = false;
+  bool _customImageSelected = false;
   final ImagePicker _picker = ImagePicker();
 
   final List<Map<String, String>> _dietaryOptions = const [
@@ -56,6 +57,11 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
 
   static const List<Map<String, String>> _foodPresets = [
     {
+      'label': 'Dum Biryani',
+      'url': 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
+      'icon': '🍲',
+    },
+    {
       'label': 'Rice & Meals',
       'url': 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
       'icon': '🍚',
@@ -64,11 +70,6 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
       'label': 'Roti & Chapati',
       'url': 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
       'icon': '🫓',
-    },
-    {
-      'label': 'Dum Biryani',
-      'url': 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
-      'icon': '🍲',
     },
     {
       'label': 'Idli & Sambar',
@@ -86,6 +87,11 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
       'icon': '🍛',
     },
     {
+      'label': 'Samosa & Snacks',
+      'url': 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80',
+      'icon': '🥟',
+    },
+    {
       'label': 'Bakery Breads',
       'url': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
       'icon': '🍞',
@@ -95,6 +101,21 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
       'url': 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
       'icon': '🍎',
     },
+    {
+      'label': 'Packaged Food',
+      'url': 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
+      'icon': '📦',
+    },
+    {
+      'label': 'Pizza & Fast Food',
+      'url': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop&q=80',
+      'icon': '🍕',
+    },
+    {
+      'label': 'Noodles & Pasta',
+      'url': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&auto=format&fit=crop&q=80',
+      'icon': '🍜',
+    },
   ];
 
   @override
@@ -103,10 +124,23 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
     final now = DateTime.now();
     _pickupStart = now;
     _pickupEnd = now.add(const Duration(hours: 6));
+    _imageUrl = ApiConstants.getFoodSpecificImage(_titleController.text, _category);
+
+    _titleController.addListener(_onTitleChanged);
+  }
+
+  void _onTitleChanged() {
+    if (!_customImageSelected && _titleController.text.trim().length > 2) {
+      final match = ApiConstants.getFoodSpecificImage(_titleController.text, _category);
+      if (match != _imageUrl) {
+        setState(() => _imageUrl = match);
+      }
+    }
   }
 
   @override
   void dispose() {
+    _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _descController.dispose();
     _qtyController.dispose();
@@ -151,6 +185,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
         setState(() {
           _selectedImageFile = file;
           _uploadingImage = true;
+          _customImageSelected = true;
         });
 
         // Upload to backend
@@ -284,6 +319,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                     setState(() {
                       _selectedImageFile = null;
                       _imageUrl = p['url']!;
+                      _customImageSelected = true;
                     });
                     Navigator.pop(ctx);
                   },
@@ -322,6 +358,7 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                   setState(() {
                     _selectedImageFile = null;
                     _imageUrl = val;
+                    _customImageSelected = true;
                   });
                 }
                 Navigator.pop(ctx);
@@ -438,7 +475,9 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
           'coordinates': [77.6412, 12.9719], // Default Bengaluru coordinates
         },
       },
-      'imageUrl': _imageUrl,
+      'imageUrl': _selectedImageFile != null || _customImageSelected
+          ? _imageUrl
+          : ApiConstants.resolveImageUrl(_imageUrl, _category, title),
     };
 
     final donProvider = Provider.of<DonationProvider>(context, listen: false);
@@ -528,7 +567,14 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                     child: Text('${c['icon']} ${c['label']}'),
                   );
                 }).toList(),
-                onChanged: (val) => setState(() => _category = val!),
+                onChanged: (val) {
+                  setState(() {
+                    _category = val!;
+                    if (!_customImageSelected) {
+                      _imageUrl = ApiConstants.getFoodSpecificImage(_titleController.text, _category);
+                    }
+                  });
+                },
               ),
               const SizedBox(height: 12),
 
@@ -701,9 +747,14 @@ class _CreateDonationScreenState extends State<CreateDonationScreen> {
                                     fit: BoxFit.cover,
                                   )
                                 : Image.network(
-                                    ApiConstants.resolveImageUrl(_imageUrl, _category, _foodNameController.text),
+                                    ApiConstants.resolveImageUrl(_imageUrl, _category, _titleController.text),
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.fastfood, color: Colors.grey),
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: AppColors.lightGreen,
+                                      child: const Center(
+                                        child: Icon(Icons.restaurant_rounded, color: AppColors.primaryGreen),
+                                      ),
+                                    ),
                                   ),
                       ),
                     ),

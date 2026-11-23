@@ -208,19 +208,42 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
             // Top Image or banner
             Container(
               height: 120,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.lightGreen,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                image: DecorationImage(
-                  image: NetworkImage(ApiConstants.resolveImageUrl(item.imageUrl, item.category, item.title)),
-                  fit: BoxFit.cover,
-                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
               ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 8,
-                    left: 8,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      ApiConstants.resolveImageUrl(item.imageUrl, item.category, item.title),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: AppColors.lightGreen,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.restaurant_rounded, size: 32, color: AppColors.primaryGreen.withValues(alpha: 0.6)),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Annadhara Food',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryGreen.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
@@ -258,6 +281,7 @@ class _FindFoodScreenState extends State<FindFoodScreen> {
                 ],
               ),
             ),
+          ),
 
             // Card Body
             Padding(

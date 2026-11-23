@@ -59,6 +59,11 @@ export const Login = () => {
           'Annadhara API base URL is not configured. Please set VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api in Vercel Project Settings (Environment Variables) and redeploy.'
         );
       } else if (!err.response) {
+        console.error('[Annadhara Login Error]: Network error or API server unreachable.', {
+          baseURL: err.config?.baseURL,
+          url: err.config?.url,
+          message: err.message,
+        });
         const isLocal =
           typeof window !== 'undefined' &&
           (window.location.hostname === 'localhost' ||

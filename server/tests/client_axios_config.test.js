@@ -29,22 +29,42 @@ async function runAxiosConfigTests() {
   const PRODUCTION_API_BASE_URL = 'https://annadhara-i83w.vercel.app/api';
 
   // Simulate resolveBaseUrl logic
-  function testResolver({ envUrl, runtimeUrl, isLocal, isDev, isProd }) {
-    const rawUrl = (envUrl || runtimeUrl || '').trim();
-    if (rawUrl) {
-      let clean = rawUrl.replace(/\/+$/, '');
-      clean = clean.replace(/\/api\/api(?:\/|$)/g, '/api');
-      if (
-        (clean.startsWith('http://') || clean.startsWith('https://')) &&
-        !clean.endsWith('/api') &&
-        !clean.includes('/api/')
-      ) {
-        clean = `${clean}/api`;
-      }
-      return clean;
-    }
+  function testResolver({ envUrl, runtimeUrl, isLocal, isDev, isProd, currentHostname = 'annadhara-6kjb.vercel.app' }) {
     if (isLocal || isDev) {
+      const rawDev = (runtimeUrl || envUrl || '').trim();
+      if (rawDev && (rawDev.startsWith('http://') || rawDev.startsWith('https://'))) {
+        let clean = rawDev.replace(/\/+$/, '');
+        clean = clean.replace(/\/api\/api(?:\/|$)/g, '/api');
+        if (!clean.endsWith('/api') && !clean.includes('/api/')) {
+          clean = `${clean}/api`;
+        }
+        return clean;
+      }
       return '/api';
+    }
+
+    const rawUrl = (runtimeUrl || envUrl || '').trim();
+    if (rawUrl) {
+      const isAbsolute = rawUrl.startsWith('http://') || rawUrl.startsWith('https://');
+      if (isAbsolute) {
+        let clean = rawUrl.replace(/\/+$/, '');
+        clean = clean.replace(/\/api\/api(?:\/|$)/g, '/api');
+        if (!clean.endsWith('/api') && !clean.includes('/api/')) {
+          clean = `${clean}/api`;
+        }
+        // Check if pointing to frontend self-host
+        let isSelf = false;
+        try {
+          const u = new URL(clean);
+          if (u.hostname === currentHostname || u.hostname.includes('annadhara-6kjb')) {
+            isSelf = true;
+          }
+        } catch (_) {}
+
+        if (!isSelf) {
+          return clean;
+        }
+      }
     }
     return PRODUCTION_API_BASE_URL;
   }
@@ -156,6 +176,63 @@ async function runAxiosConfigTests() {
     passed++;
   } catch (err) {
     console.error(`  ❌ FAILED: Test 8: ${err.message}`);
+  }
+
+  // Test 9: Relative '/api' in remote production automatically upgrades to PRODUCTION_API_BASE_URL
+  total++;
+  try {
+    const res = testResolver({ envUrl: '/api', isLocal: false, isDev: false, isProd: true });
+    assert(res === 'https://annadhara-i83w.vercel.app/api', `Expected PRODUCTION_API_BASE_URL, got: '${res}'`);
+    console.log('  ✅ PASSED: Test 9 - Relative /api in remote production safely resolves to production backend URL');
+    passed++;
+  } catch (err) {
+    console.error(`  ❌ FAILED: Test 9: ${err.message}`);
+  }
+
+  // Test 10: Self-referencing frontend URL in production safely recovers to PRODUCTION_API_BASE_URL
+  total++;
+  try {
+    const res = testResolver({ envUrl: 'https://annadhara-6kjb.vercel.app/api', isLocal: false, isDev: false, isProd: true, currentHostname: 'annadhara-6kjb.vercel.app' });
+    assert(res === 'https://annadhara-i83w.vercel.app/api', `Expected production backend URL, got: '${res}'`);
+    console.log('  ✅ PASSED: Test 10 - Self-referencing frontend domain safely recovers to production backend URL');
+    passed++;
+  } catch (err) {
+    console.error(`  ❌ FAILED: Test 10: ${err.message}`);
+  }
+
+  // Test 11: Valid external backend URL is preserved in production
+  total++;
+  try {
+    const res = testResolver({ envUrl: 'https://custom-annadhara-backend.vercel.app', isLocal: false, isDev: false, isProd: true });
+    assert(res === 'https://custom-annadhara-backend.vercel.app/api', `Expected custom backend URL with /api, got: '${res}'`);
+    console.log('  ✅ PASSED: Test 11 - Valid custom external backend URL is preserved');
+    passed++;
+  } catch (err) {
+    console.error(`  ❌ FAILED: Test 11: ${err.message}`);
+  }
+
+  // Test 12: Interceptor baseURL safety override for remote production
+  total++;
+  try {
+    function interceptorGuard(config, isProdRemote = true) {
+      if (isProdRemote) {
+        const b = (config.baseURL || '').trim();
+        if (!b || b === '/api' || b.startsWith('/') || b.includes('annadhara-6kjb')) {
+          config.baseURL = PRODUCTION_API_BASE_URL;
+        }
+      }
+      return config;
+    }
+
+    const cfg1 = interceptorGuard({ baseURL: '/api', url: '/auth/login' });
+    assert(cfg1.baseURL === 'https://annadhara-i83w.vercel.app/api', `Expected override from /api, got: ${cfg1.baseURL}`);
+
+    const cfg2 = interceptorGuard({ baseURL: 'https://annadhara-6kjb.vercel.app/api', url: '/auth/login' });
+    assert(cfg2.baseURL === 'https://annadhara-i83w.vercel.app/api', `Expected override from frontend domain, got: ${cfg2.baseURL}`);
+    console.log('  ✅ PASSED: Test 12 - Interceptor safety guard overrides invalid baseURL in remote production');
+    passed++;
+  } catch (err) {
+    console.error(`  ❌ FAILED: Test 12: ${err.message}`);
   }
 
   console.log(`\n================================================================`);

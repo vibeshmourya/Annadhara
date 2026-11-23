@@ -9,54 +9,21 @@ export const PRODUCTION_API_BASE_URL = 'https://annadhara-i83w.vercel.app/api';
  * Resolves and normalizes the API base URL from Vite environment variables or runtime overrides.
  *
  * Requirements handled:
- * 1. Reads production API base URL correctly from VITE_API_BASE_URL, VITE_API_URL, or VITE_BACKEND_URL.
- * 2. Checks runtime overrides (window.__ANNADHARA_API_BASE_URL__ or localStorage 'ANNADHARA_API_BASE_URL').
- * 3. Falls back safely during local development (returns '/api' for Vite dev proxy forwarding to localhost:5000).
- * 4. In production deployed on a remote domain without configured VITE_API_BASE_URL, defaults safely
- *    to PRODUCTION_API_BASE_URL (https://annadhara-i83w.vercel.app/api), preventing accidental
- *    requests to the static frontend host that would fail with Network Error or HTTP 405.
- * 5. Handles trailing slashes properly (prevents double slashes like /api//auth/login).
- * 6. Avoids duplicated prefixes (such as /api/api/auth/login).
- * 7. Automatically appends '/api' to domain-only URLs (e.g. https://backend.vercel.app -> https://backend.vercel.app/api).
+ * 1. Local Development (localhost / 127.0.0.1 / [::1] or DEV mode):
+ *    - Uses '/api' proxy forwarding to http://localhost:5000.
+ *    - Allows explicit local dev overrides if provided.
+ * 2. Remote Production Deployment:
+ *    - Relative URLs (e.g. '/api' or '/') are strictly rejected because the static
+ *      frontend host cannot handle backend Express requests.
+ *    - Self-referencing frontend origins (e.g. 'annadhara-6kjb.vercel.app') are
+ *      rejected to prevent circular requests to the static frontend.
+ *    - If a valid external backend URL is provided (via VITE_API_BASE_URL or runtime override),
+ *      it is cleaned and normalized (appends '/api' if domain-only, collapses '/api/api').
+ *    - If VITE_API_BASE_URL is missing, relative, or points to the frontend host,
+ *      it safely and permanently defaults to PRODUCTION_API_BASE_URL
+ *      ('https://annadhara-i83w.vercel.app/api').
  */
 export const resolveBaseUrl = () => {
-  // 1. Check Vite build-time environment variables
-  const envUrl =
-    (typeof import.meta !== 'undefined' && import.meta.env && (
-      import.meta.env.VITE_API_BASE_URL ||
-      import.meta.env.VITE_API_URL ||
-      import.meta.env.VITE_BACKEND_URL
-    )) || '';
-
-  // 2. Check browser runtime overrides (DevTools / Dynamic config / LocalStorage)
-  const runtimeUrl =
-    typeof window !== 'undefined'
-      ? (window.__ANNADHARA_API_BASE_URL__ ||
-         window.__API_BASE_URL__ ||
-         localStorage.getItem('ANNADHARA_API_BASE_URL') ||
-         localStorage.getItem('VITE_API_BASE_URL') ||
-         '')
-      : '';
-
-  const rawUrl = (envUrl || runtimeUrl || '').trim();
-
-  if (rawUrl) {
-    let clean = rawUrl.replace(/\/+$/, ''); // Strip all trailing slashes
-    clean = clean.replace(/\/api\/api(?:\/|$)/g, '/api'); // Collapse any duplicate /api/api
-
-    // If full domain URL without /api, append /api
-    if (
-      (clean.startsWith('http://') || clean.startsWith('https://')) &&
-      !clean.endsWith('/api') &&
-      !clean.includes('/api/')
-    ) {
-      clean = `${clean}/api`;
-    }
-
-    return clean;
-  }
-
-  // 3. Check if running in local development environment
   const isLocalhost =
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' ||
@@ -68,14 +35,89 @@ export const resolveBaseUrl = () => {
     import.meta.env &&
     (import.meta.env.DEV || import.meta.env.MODE === 'development');
 
+  // 1. In local development environment, use Vite dev proxy '/api' by default
   if (isLocalhost || isDevMode) {
-    // In local development, Vite dev server proxies '/api' -> http://localhost:5000
+    const devEnvUrl =
+      (typeof import.meta !== 'undefined' && import.meta.env && (
+        import.meta.env.VITE_API_BASE_URL ||
+        import.meta.env.VITE_API_URL ||
+        import.meta.env.VITE_BACKEND_URL
+      )) || '';
+    const devRuntimeUrl =
+      typeof window !== 'undefined'
+        ? (window.__ANNADHARA_API_BASE_URL__ ||
+           window.__API_BASE_URL__ ||
+           localStorage.getItem('ANNADHARA_API_BASE_URL') ||
+           '')
+        : '';
+    const rawDev = (devRuntimeUrl || devEnvUrl || '').trim();
+    if (rawDev && (rawDev.startsWith('http://') || rawDev.startsWith('https://'))) {
+      let clean = rawDev.replace(/\/+$/, '');
+      clean = clean.replace(/\/api\/api(?:\/|$)/g, '/api');
+      if (!clean.endsWith('/api') && !clean.includes('/api/')) {
+        clean = `${clean}/api`;
+      }
+      return clean;
+    }
     return '/api';
   }
 
-  // 4. In production deployed on a remote domain without configured VITE_API_BASE_URL:
-  // Instead of leaving baseURL empty and causing "Network Error" on static hosting,
-  // safely default to the deployed Annadhara Vercel backend.
+  // 2. In Remote Production Deployment:
+  const envUrl =
+    (typeof import.meta !== 'undefined' && import.meta.env && (
+      import.meta.env.VITE_API_BASE_URL ||
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_BACKEND_URL
+    )) || '';
+
+  const runtimeUrl =
+    typeof window !== 'undefined'
+      ? (window.__ANNADHARA_API_BASE_URL__ ||
+         window.__API_BASE_URL__ ||
+         localStorage.getItem('ANNADHARA_API_BASE_URL') ||
+         localStorage.getItem('VITE_API_BASE_URL') ||
+         '')
+      : '';
+
+  const rawUrl = (runtimeUrl || envUrl || '').trim();
+
+  if (rawUrl) {
+    // Check if rawUrl is an absolute HTTP/HTTPS URL
+    const isAbsolute = rawUrl.startsWith('http://') || rawUrl.startsWith('https://');
+
+    if (isAbsolute) {
+      let clean = rawUrl.replace(/\/+$/, '');
+      clean = clean.replace(/\/api\/api(?:\/|$)/g, '/api');
+
+      if (!clean.endsWith('/api') && !clean.includes('/api/')) {
+        clean = `${clean}/api`;
+      }
+
+      // Guard: check if URL accidentally references the static frontend host itself
+      let isSelfHost = false;
+      if (typeof window !== 'undefined') {
+        const currentHostname = (window.location.hostname || '').toLowerCase();
+        try {
+          const parsed = new URL(clean);
+          if (
+            parsed.hostname.toLowerCase() === currentHostname ||
+            parsed.hostname.includes('annadhara-6kjb')
+          ) {
+            isSelfHost = true;
+          }
+        } catch (_) {}
+      }
+
+      // If pointing to a valid external backend domain, use it
+      if (!isSelfHost) {
+        return clean;
+      }
+    }
+    // Relative URLs (like '/api') or self-referencing frontend URLs in production are invalid:
+    // Fall through to PRODUCTION_API_BASE_URL
+  }
+
+  // 3. Permanent production default: Deployed Express backend on Vercel
   return PRODUCTION_API_BASE_URL;
 };
 
@@ -118,21 +160,19 @@ api.interceptors.request.use(
       config.baseURL = currentBase;
     }
 
-    // 2. Guard and auto-fallback for production backend
+    // 2. Extra safety guard: in remote production, guarantee absolute backend URL
     const isLocal =
       typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' ||
        window.location.hostname === '127.0.0.1' ||
        window.location.hostname === '[::1]');
 
-    const isProd = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.PROD;
-
     if (
-      isProd &&
       !isLocal &&
-      !config.baseURL &&
-      !config.url?.startsWith('http://') &&
-      !config.url?.startsWith('https://')
+      (!config.baseURL ||
+       config.baseURL === '/api' ||
+       config.baseURL === '/' ||
+       config.baseURL.includes('annadhara-6kjb'))
     ) {
       config.baseURL = PRODUCTION_API_BASE_URL;
     }

@@ -123,4 +123,12 @@ export const aiApi = {
     api.delete(`/ai/conversations/${id}`, {
       headers: role ? { 'x-test-role': role } : {},
     }),
+  clearConversation: (id, role) =>
+    api.post(`/ai/conversations/${id}/clear`, {}, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+  submitFeedback: (data, role) =>
+    api.post('/ai/feedback', data, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
 };

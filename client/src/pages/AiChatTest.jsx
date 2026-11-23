@@ -183,6 +183,7 @@ export const AiChatTest = () => {
           model: respData.model,
           intent: respData.intent,
           citations: respData.citations || [],
+          actions: respData.actions || [],
           hasPlatformData: respData.hasPlatformData,
           timestamp: respData.timestamp || new Date().toISOString(),
         };
@@ -428,6 +429,21 @@ export const AiChatTest = () => {
                       <div>
                         {renderFormattedContent(msg.content)}
                         <CitationList citations={msg.citations} />
+
+                        {msg.actions && msg.actions.length > 0 && (
+                          <div className="mt-2.5 pt-2 border-t border-[#E3EAE5] flex flex-wrap gap-1.5">
+                            {msg.actions.map((act, aIdx) => (
+                              <Link
+                                key={aIdx}
+                                to={act.path}
+                                className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#EAF4EE] text-[#205B43] hover:bg-[#205B43] hover:text-white transition-all shadow-xs border border-[#2E7D5B]/30"
+                              >
+                                <span>{act.label}</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </Link>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 

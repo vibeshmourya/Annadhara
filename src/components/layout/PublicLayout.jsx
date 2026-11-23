@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { AnnadharaAIWidget } from '../ai/AnnadharaAIWidget';
 
 export const PublicLayout = ({ children }) => {
   return (
@@ -8,6 +9,8 @@ export const PublicLayout = ({ children }) => {
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
+      {/* Annadhara AI Assistant Floating Launcher */}
+      <AnnadharaAIWidget />
     </div>
   );
 };

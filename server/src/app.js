@@ -20,6 +20,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const contributionRoutes = require('./routes/contributionRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 
@@ -209,6 +210,7 @@ app.get(['/', '/api'], async (req, res) => {
       users: '/api/users',
       dashboard: '/api/dashboard',
       upload: '/api/upload',
+      ai: '/api/ai',
     },
     timestamp: new Date().toISOString(),
   });
@@ -280,6 +282,7 @@ app.use(['/api/handover', '/handover'], handoverRoutes);
 app.use(['/api/notifications', '/notifications'], notificationRoutes);
 app.use(['/api/dashboard', '/dashboard'], dashboardRoutes);
 app.use(['/api/upload', '/upload'], uploadRoutes);
+app.use(['/api/ai', '/ai'], aiRoutes);
 
 // 404 Handler for undefined routes
 app.use('*', (req, res) => {

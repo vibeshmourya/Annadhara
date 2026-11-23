@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { Modal } from './Modal';
 import { QrCode, Copy, Check, ShieldCheck, Download } from 'lucide-react';
 
@@ -37,14 +36,12 @@ export const QrCodeModal = ({
         )}
 
         {/* QR Code Container */}
-        <div className="p-4 bg-white rounded-2xl border-2 border-[#2E7D5B]/30 shadow-md flex items-center justify-center">
-          <QRCodeSVG
-            value={code}
-            size={200}
-            level="H"
-            fgColor="#205B43"
-            bgColor="#FFFFFF"
-            includeMargin={true}
+        <div className="p-4 bg-white rounded-2xl border-2 border-[#2E7D5B]/30 shadow-md flex items-center justify-center min-w-[200px] min-h-[200px]">
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(code)}&color=32-91-67`}
+            alt={`Handover QR Code ${code}`}
+            className="w-48 h-48 object-contain rounded-lg"
+            loading="lazy"
           />
         </div>
 

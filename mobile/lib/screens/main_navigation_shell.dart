@@ -15,6 +15,7 @@ import 'admin/admin_donations_screen.dart';
 import 'admin/admin_reports_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'profile/profile_screen.dart';
+import 'ai/annadhara_ai_screen.dart';
 
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
@@ -145,6 +146,17 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       body: IndexedStack(
         index: safeIndex,
         children: screens,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AnnadharaAiScreen()),
+          );
+        },
+        backgroundColor: AppColors.primaryGreen,
+        tooltip: 'Annadhara AI Assistant',
+        child: const Icon(Icons.auto_awesome, color: Colors.white),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: safeIndex,

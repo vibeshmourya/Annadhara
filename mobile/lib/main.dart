@@ -7,6 +7,7 @@ import 'providers/donation_provider.dart';
 import 'providers/activity_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/admin_provider.dart';
+import 'providers/ai_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation_shell.dart';
 
@@ -27,6 +28,7 @@ class AnnadharaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => AiProvider()),
       ],
       child: MaterialApp(
         title: 'Annadhara',

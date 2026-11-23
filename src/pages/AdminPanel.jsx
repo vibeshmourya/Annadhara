@@ -13,7 +13,7 @@ import {
   Package,
   HeartHandshake,
 } from 'lucide-react';
-import { adminApi, dashboardApi } from '../api/endpoints';
+import { adminApi, dashboardApi, contributionApi } from '../api/endpoints';
 import { LoadingSpinner, EmptyState, StatCard } from '../components/common/StatCard';
 import { StatusBadge } from '../components/common/Badge';
 import { ConfirmationDialog, Modal } from '../components/common/Modal';
@@ -30,6 +30,16 @@ export const AdminPanel = () => {
   const [users, setUsers] = useState([]);
   const [reportedDonations, setReportedDonations] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+
+  // Verified Contributions state
+  const [contributions, setContributions] = useState([]);
+  const [contributionAnalytics, setContributionAnalytics] = useState(null);
+  const [contributionSearch, setContributionSearch] = useState('');
+  const [contributionFilterStatus, setContributionFilterStatus] = useState('');
+  const [selectedContributionForReview, setSelectedContributionForReview] = useState(null);
+  const [contributionReviewAction, setContributionReviewAction] = useState(null); // 'mark_verified' | 'under_review' | 'reverse'
+  const [contributionReviewNotes, setContributionReviewNotes] = useState('');
+  const [contributionReversalReason, setContributionReversalReason] = useState('');
 
   // Search
   const [userSearch, setUserSearch] = useState('');
@@ -67,6 +77,16 @@ export const AdminPanel = () => {
       } else if (activeTab === 'audits') {
         const res = await adminApi.getAuditLogs();
         if (res.data.success) setAuditLogs(res.data.data);
+      } else if (activeTab === 'contributions') {
+        const [recordsRes, analyticsRes] = await Promise.all([
+          contributionApi.adminGetAll({
+            status: contributionFilterStatus,
+            search: contributionSearch,
+          }),
+          contributionApi.adminGetAnalytics(),
+        ]);
+        if (recordsRes.data.success) setContributions(recordsRes.data.data.records);
+        if (analyticsRes.data.success) setContributionAnalytics(analyticsRes.data.data);
       }
     } catch (err) {
       console.error('Failed to load admin tab:', err);
@@ -123,6 +143,30 @@ export const AdminPanel = () => {
       fetchTabContent();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to resolve report');
+    }
+  };
+
+  const handleAdminReviewContribution = async (e) => {
+    e.preventDefault();
+    if (!selectedContributionForReview || !contributionReviewAction) return;
+
+    try {
+      setActionLoading(true);
+      await contributionApi.adminReview(selectedContributionForReview._id, {
+        action: contributionReviewAction,
+        reviewNotes: contributionReviewNotes,
+        reversalReason: contributionReversalReason,
+      });
+
+      setSelectedContributionForReview(null);
+      setContributionReviewAction(null);
+      setContributionReviewNotes('');
+      setContributionReversalReason('');
+      fetchTabContent();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to review contribution');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -202,6 +246,18 @@ export const AdminPanel = () => {
           }`}
         >
           Reported Food Listings
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('contributions')}
+          className={`pb-3 px-4 text-xs font-bold transition-all whitespace-nowrap ${
+            activeTab === 'contributions'
+              ? 'text-[#205B43] border-b-2 border-[#2E7D5B]'
+              : 'text-[#718078] hover:text-[#26332D]'
+          }`}
+        >
+          Verified Contributions
         </button>
 
         <button
@@ -472,7 +528,288 @@ export const AdminPanel = () => {
               </div>
             </div>
           )}
+
+          {/* TAB 5: Verified Contributions & Recognition Management */}
+          {activeTab === 'contributions' && (
+            <div className="space-y-6">
+              {/* Analytics Summary */}
+              {contributionAnalytics && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <div className="p-3.5 rounded-xl bg-white border border-[#E3EAE5] shadow-xs">
+                    <span className="text-[10px] font-bold uppercase text-[#718078]">Total Records</span>
+                    <p className="text-xl font-black text-[#26332D] mt-0.5">{contributionAnalytics.totalRecords}</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white border border-[#E3EAE5] shadow-xs">
+                    <span className="text-[10px] font-bold uppercase text-[#205B43]">Verified Active</span>
+                    <p className="text-xl font-black text-[#205B43] mt-0.5">{contributionAnalytics.verifiedCount}</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white border border-[#E3EAE5] shadow-xs">
+                    <span className="text-[10px] font-bold uppercase text-amber-700">Under Review</span>
+                    <p className="text-xl font-black text-amber-600 mt-0.5">{contributionAnalytics.underReviewCount}</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white border border-[#E3EAE5] shadow-xs">
+                    <span className="text-[10px] font-bold uppercase text-red-700">Reversed</span>
+                    <p className="text-xl font-black text-red-600 mt-0.5">{contributionAnalytics.reversedCount}</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white border border-[#E3EAE5] shadow-xs">
+                    <span className="text-[10px] font-bold uppercase text-[#718078]">Total Rescued</span>
+                    <p className="text-xl font-black text-[#26332D] mt-0.5">{contributionAnalytics.totalQuantityRescued} units</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-white border border-[#E3EAE5] shadow-xs">
+                    <span className="text-[10px] font-bold uppercase text-[#718078]">Active Donors</span>
+                    <p className="text-xl font-black text-[#205B43] mt-0.5">{contributionAnalytics.activeContributingDonors}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Recognition Level Distribution */}
+              {contributionAnalytics?.levelDistribution && (
+                <div className="p-4 rounded-2xl bg-white border border-[#E3EAE5] shadow-xs space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#718078]">
+                    Donor Recognition Level Distribution
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                    {Object.entries(contributionAnalytics.levelDistribution).map(([levelName, count]) => (
+                      <div key={levelName} className="p-2.5 rounded-xl bg-[#F8FAF8] border border-stone-200/60">
+                        <div className="text-[11px] text-[#718078] truncate">{levelName}</div>
+                        <div className="text-base font-bold text-[#205B43] mt-0.5">{count} donors</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Filters */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-white rounded-xl border border-[#E3EAE5]">
+                <div className="relative w-full sm:w-80">
+                  <Search className="w-4 h-4 text-[#718078] absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search by Contribution ID or Item..."
+                    value={contributionSearch}
+                    onChange={(e) => setContributionSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && fetchTabContent()}
+                    className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-stone-200 text-xs text-[#26332D]"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <select
+                    value={contributionFilterStatus}
+                    onChange={(e) => setContributionFilterStatus(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg border border-stone-200 text-xs bg-white text-[#26332D]"
+                  >
+                    <option value="">All Verification Statuses</option>
+                    <option value="VERIFIED">Verified</option>
+                    <option value="UNDER_REVIEW">Under Review</option>
+                    <option value="REVERSED">Reversed</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={fetchTabContent}
+                    className="px-3 py-1.5 bg-[#2E7D5B] text-white text-xs font-bold rounded-lg hover:bg-[#205B43]"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+
+              {/* Contributions Table */}
+              <div className="bg-white rounded-2xl border border-[#E3EAE5] shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#F8FAF8] border-b border-[#E3EAE5] text-[#718078]">
+                      <tr>
+                        <th className="px-4 py-3">Contribution ID</th>
+                        <th className="px-4 py-3">Food Title</th>
+                        <th className="px-4 py-3">Quantity</th>
+                        <th className="px-4 py-3">Donor</th>
+                        <th className="px-4 py-3">Recipient Shelter</th>
+                        <th className="px-4 py-3">Verified Date</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E3EAE5]">
+                      {contributions.length > 0 ? (
+                        contributions.map((c) => (
+                          <tr key={c._id} className="hover:bg-stone-50 transition-colors">
+                            <td className="px-4 py-3 font-mono font-bold text-[#205B43]">
+                              {c.contributionId}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-[#26332D]">
+                              {c.foodTitle}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-[#205B43]">
+                              {c.quantity} {c.unit}
+                            </td>
+                            <td className="px-4 py-3 text-[#26332D]">
+                              {c.donorOrg?.name || c.donor?.name || 'Donor'}
+                            </td>
+                            <td className="px-4 py-3 text-[#718078]">
+                              {c.recipientOrg?.name || c.recipient?.name || 'Recipient'}
+                            </td>
+                            <td className="px-4 py-3 text-[#718078]">
+                              {new Date(c.verifiedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  c.status === 'VERIFIED'
+                                    ? 'bg-[#EAF4EE] text-[#205B43]'
+                                    : c.status === 'UNDER_REVIEW'
+                                    ? 'bg-amber-100 text-amber-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}
+                              >
+                                {c.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap">
+                              {c.status !== 'REVERSED' && (
+                                <>
+                                  {c.status !== 'UNDER_REVIEW' ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedContributionForReview(c);
+                                        setContributionReviewAction('under_review');
+                                        setContributionReviewNotes('');
+                                      }}
+                                      className="px-2 py-1 rounded bg-amber-50 text-amber-700 font-bold text-[11px] hover:bg-amber-100"
+                                    >
+                                      Flag Review
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedContributionForReview(c);
+                                        setContributionReviewAction('mark_verified');
+                                        setContributionReviewNotes('');
+                                      }}
+                                      className="px-2 py-1 rounded bg-[#EAF4EE] text-[#205B43] font-bold text-[11px] hover:bg-[#d5ebe0]"
+                                    >
+                                      Mark Verified
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedContributionForReview(c);
+                                      setContributionReviewAction('reverse');
+                                      setContributionReversalReason('');
+                                    }}
+                                    className="px-2 py-1 rounded bg-red-50 text-red-700 font-bold text-[11px] hover:bg-red-100"
+                                  >
+                                    Reverse
+                                  </button>
+                                </>
+                              )}
+                              {c.status === 'REVERSED' && (
+                                <span className="text-[10px] text-[#718078] italic">
+                                  Reversed: {c.reversalReason || 'No reason'}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-xs text-[#718078]">
+                            No verified contributions found matching the criteria.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </>
+      )}
+
+      {/* Contribution Review / Reversal Modal */}
+      {selectedContributionForReview && (
+        <Modal
+          isOpen={!!selectedContributionForReview}
+          onClose={() => {
+            setSelectedContributionForReview(null);
+            setContributionReviewAction(null);
+            setContributionReviewNotes('');
+            setContributionReversalReason('');
+          }}
+          title={
+            contributionReviewAction === 'reverse'
+              ? 'Reverse Verified Contribution'
+              : contributionReviewAction === 'under_review'
+              ? 'Place Contribution Under Review'
+              : 'Re-affirm Contribution as Verified'
+          }
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleAdminReviewContribution} className="space-y-4 text-xs">
+            <div className="p-3 bg-[#F8FAF8] rounded-xl border border-stone-200/70 space-y-1">
+              <div><strong className="text-[#26332D]">ID:</strong> {selectedContributionForReview.contributionId}</div>
+              <div><strong className="text-[#26332D]">Item:</strong> {selectedContributionForReview.foodTitle} ({selectedContributionForReview.quantity} {selectedContributionForReview.unit})</div>
+              <div><strong className="text-[#26332D]">Donor:</strong> {selectedContributionForReview.donorOrg?.name || selectedContributionForReview.donor?.name}</div>
+            </div>
+
+            {contributionReviewAction === 'reverse' ? (
+              <div>
+                <label className="block font-bold text-[#D9534F] mb-1">
+                  Mandatory Reversal Justification Reason *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="e.g. Audit confirmed that food was rejected upon arrival due to spoilage and not accepted by shelter."
+                  value={contributionReversalReason}
+                  onChange={(e) => setContributionReversalReason(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-red-300 text-xs focus:ring-2 focus:ring-red-400"
+                />
+                <p className="text-[11px] text-[#718078] mt-1">
+                  Reversing this contribution will deduct it from the donor's active totals and recalculate their recognition level.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block font-bold text-[#26332D] mb-1">
+                  Administrative Review Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Investigating reported discrepancy from recipient shelter."
+                  value={contributionReviewNotes}
+                  onChange={(e) => setContributionReviewNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-stone-200 text-xs"
+                />
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2 pt-2 border-t border-stone-200">
+              <button
+                type="button"
+                onClick={() => setSelectedContributionForReview(null)}
+                className="px-4 py-2 rounded-xl text-stone-600 bg-stone-100 hover:bg-stone-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={actionLoading}
+                className={`px-5 py-2 rounded-xl font-bold text-white shadow-xs ${
+                  contributionReviewAction === 'reverse'
+                    ? 'bg-[#D9534F] hover:bg-red-700'
+                    : 'bg-[#2E7D5B] hover:bg-[#205B43]'
+                }`}
+              >
+                {actionLoading ? 'Processing...' : contributionReviewAction === 'reverse' ? 'Confirm Reversal' : 'Save Status'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* Organization Verification Modal with Custom Review Notes */}

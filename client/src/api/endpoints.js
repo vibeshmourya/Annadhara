@@ -103,3 +103,24 @@ export const contributionApi = {
   adminGetAnalytics: () => api.get('/contributions/admin/analytics'),
   adminReview: (id, data) => api.patch(`/contributions/admin/${id}/review`, data),
 };
+
+// Annadhara AI Assistant
+export const aiApi = {
+  chat: (data, role) =>
+    api.post('/ai/chat', data, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+  getStatus: () => api.get('/ai/status'),
+  getConversations: (role) =>
+    api.get('/ai/conversations', {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+  getConversationById: (id, role) =>
+    api.get(`/ai/conversations/${id}`, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+  deleteConversation: (id, role) =>
+    api.delete(`/ai/conversations/${id}`, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+};

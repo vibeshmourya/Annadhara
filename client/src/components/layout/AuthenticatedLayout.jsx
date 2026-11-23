@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { AnnadharaAIWidget } from '../ai/AnnadharaAIWidget';
 
 export const AuthenticatedLayout = ({ children }) => {
   const { user, role, isDonor, isRecipient, isVolunteer, isAdmin, logout } = useAuth();
@@ -355,6 +356,9 @@ export const AuthenticatedLayout = ({ children }) => {
           </div>
         </div>
       )}
+
+      {/* Annadhara AI Assistant Floating Launcher */}
+      <AnnadharaAIWidget />
     </div>
   );
 };

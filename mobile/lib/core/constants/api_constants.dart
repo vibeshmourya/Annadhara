@@ -133,4 +133,9 @@ class ApiConstants {
   static const String adminOrganizations = '/admin/organizations';
   static const String adminUsers = '/admin/users';
   static const String adminAuditLogs = '/admin/audit-logs';
+
+  // AI Assistant endpoints
+  static const String aiChat = '/ai/chat';
+  static const String aiStatus = '/ai/status';
+  static const String aiConversations = '/ai/conversations';
 }

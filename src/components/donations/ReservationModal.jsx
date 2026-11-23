@@ -78,9 +78,9 @@ export const ReservationModal = ({ isOpen, onClose, donation, onReservationSucce
 
           <div className="bg-[#F8FAF8] border border-stone-200/80 rounded-xl p-4 text-left space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-[#718078]">Handover Code:</span>
-              <span className="font-mono font-bold text-[#205B43] bg-[#EAF4EE] px-2 py-0.5 rounded">
-                {successData.handoverCode}
+              <span className="text-[#718078]">Delivery Verification Code:</span>
+              <span className="font-mono font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                {successData.deliveryCode || successData.handoverCode}
               </span>
             </div>
             <div className="flex justify-between text-xs">

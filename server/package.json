@@ -19,7 +19,8 @@
     "test:vercel": "node tests/vercel_deployment.test.js",
     "test:regprod": "node tests/registration_production.test.js",
     "test:405": "node tests/http_405_diagnostic.test.js",
-    "test:axios": "node tests/client_axios_config.test.js"
+    "test:axios": "node tests/client_axios_config.test.js",
+    "test:ai": "node tests/ai.test.js"
   },
   "keywords": [
     "annadhara",

@@ -22,6 +22,7 @@ import { Notifications } from './pages/Notifications';
 import { Profile } from './pages/Profile';
 import { AdminPanel } from './pages/AdminPanel';
 import { NotFound } from './pages/NotFound';
+import { AiChatTest } from './pages/AiChatTest';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -101,6 +102,8 @@ export const App = () => {
             {/* Flexible Routes (Public or Authenticated) */}
             <Route path="/find-food" element={<FlexibleRoute component={FindFood} />} />
             <Route path="/donations/:id" element={<FlexibleRoute component={DonationDetails} />} />
+            <Route path="/ai" element={<FlexibleRoute component={AiChatTest} />} />
+            <Route path="/test-ai" element={<FlexibleRoute component={AiChatTest} />} />
 
             {/* Authenticated Routes with Role Protection */}
             <Route

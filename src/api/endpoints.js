@@ -50,11 +50,13 @@ export const pickupApi = {
   getById: (id) => api.get(`/pickups/${id}`),
   claim: (id) => api.post(`/pickups/${id}/claim`),
   updateStatus: (id, statusData) => api.patch(`/pickups/${id}/status`, statusData),
+  verifyDelivery: (id, deliveryData) => api.post(`/pickups/${id}/verify-delivery`, deliveryData),
 };
 
 // Handover
 export const handoverApi = {
   confirm: (handoverData) => api.post('/handover/confirm', handoverData),
+  confirmDelivery: (deliveryData) => api.post('/handover/confirm-delivery', deliveryData),
   getByReservation: (reservationId) => api.get(`/handover/reservation/${reservationId}`),
 };
 
@@ -88,4 +90,37 @@ export const uploadApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   validateUrl: (url) => api.post('/upload/validate-url', { url }),
+};
+
+// Verified Contributions (Annadhara Verified Contributions & Recognition)
+export const contributionApi = {
+  getMySummary: () => api.get('/contributions/my-summary'),
+  getMyHistory: (params) => api.get('/contributions/my-history', { params }),
+  getById: (id) => api.get(`/contributions/${id}`),
+  getReceived: (params) => api.get('/contributions/received', { params }),
+  reportDiscrepancy: (id, data) => api.post(`/contributions/${id}/discrepancy`, data),
+  adminGetAll: (params) => api.get('/contributions/admin/all', { params }),
+  adminGetAnalytics: () => api.get('/contributions/admin/analytics'),
+  adminReview: (id, data) => api.patch(`/contributions/admin/${id}/review`, data),
+};
+
+// Annadhara AI Assistant
+export const aiApi = {
+  chat: (data, role) =>
+    api.post('/ai/chat', data, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+  getStatus: () => api.get('/ai/status'),
+  getConversations: (role) =>
+    api.get('/ai/conversations', {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+  getConversationById: (id, role) =>
+    api.get(`/ai/conversations/${id}`, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
+  deleteConversation: (id, role) =>
+    api.delete(`/ai/conversations/${id}`, {
+      headers: role ? { 'x-test-role': role } : {},
+    }),
 };

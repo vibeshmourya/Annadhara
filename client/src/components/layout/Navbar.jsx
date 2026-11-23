@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Globe,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { en } from '../../locales/en';
@@ -58,6 +59,18 @@ export const Navbar = () => {
             >
               <Search className="w-4 h-4" />
               <span>Find Food</span>
+            </Link>
+
+            <Link
+              to="/ai"
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                isActive('/ai')
+                  ? 'bg-[#EAF4EE] text-[#205B43]'
+                  : 'text-[#718078] hover:text-[#26332D] hover:bg-stone-50'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-[#2E7D5B]" />
+              <span>Annadhara AI</span>
             </Link>
 
             <a
@@ -188,6 +201,14 @@ export const Navbar = () => {
             className="block px-3 py-2 rounded-xl text-sm font-semibold text-[#26332D] hover:bg-stone-50"
           >
             Find Food
+          </Link>
+          <Link
+            to="/ai"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold text-[#205B43] bg-[#EAF4EE]"
+          >
+            <Sparkles className="w-4 h-4 text-[#2E7D5B]" />
+            <span>Annadhara AI</span>
           </Link>
           <a
             href="/#how-it-works"

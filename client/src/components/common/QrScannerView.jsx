@@ -1,6 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import jsQR from 'jsqr';
 import { Camera, Upload, AlertCircle, CheckCircle2, RefreshCw, Zap, Image as ImageIcon } from 'lucide-react';
+
+let jsQRModule = null;
+const getJsQR = async () => {
+  if (typeof window !== 'undefined' && window.jsQR) return window.jsQR;
+  if (jsQRModule) return jsQRModule;
+  try {
+    const mod = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm');
+    jsQRModule = mod.default || mod;
+    return jsQRModule;
+  } catch (_) {
+    return null;
+  }
+};
 
 export const QrScannerView = ({ onScanSuccess, hintText = 'Scan QR Code' }) => {
   const videoRef = useRef(null);
@@ -14,8 +26,8 @@ export const QrScannerView = ({ onScanSuccess, hintText = 'Scan QR Code' }) => {
   const [scannedResult, setScannedResult] = useState('');
   const [scanSuccess, setScanSuccess] = useState(false);
 
-  // Scan frame by frame using jsQR
-  const scanFrame = useCallback(() => {
+  // Scan frame by frame using BarcodeDetector or jsQR
+  const scanFrame = useCallback(async () => {
     if (!videoRef.current || videoRef.current.readyState < 2) {
       animFrameId.current = requestAnimationFrame(scanFrame);
       return;
@@ -26,23 +38,42 @@ export const QrScannerView = ({ onScanSuccess, hintText = 'Scan QR Code' }) => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     if (video.videoWidth > 0 && video.videoHeight > 0) {
+      // 1. Try native browser BarcodeDetector API if available (Chrome, Edge, Android)
+      if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+        try {
+          const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          const barcodes = await detector.detect(video);
+          if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+            const rawVal = barcodes[0].rawValue.trim();
+            setScannedResult(rawVal);
+            setScanSuccess(true);
+            stopCamera();
+            onScanSuccess(rawVal);
+            return;
+          }
+        } catch (_) {}
+      }
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       try {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'dontInvert',
-        });
+        const decoder = await getJsQR();
+        if (decoder) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = decoder(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert',
+          });
 
-        if (code && code.data && code.data.trim()) {
-          const rawVal = code.data.trim();
-          setScannedResult(rawVal);
-          setScanSuccess(true);
-          stopCamera();
-          onScanSuccess(rawVal);
-          return;
+          if (code && code.data && code.data.trim()) {
+            const rawVal = code.data.trim();
+            setScannedResult(rawVal);
+            setScanSuccess(true);
+            stopCamera();
+            onScanSuccess(rawVal);
+            return;
+          }
         }
       } catch (_) {
         // Continue scanning next frame
@@ -118,23 +149,40 @@ export const QrScannerView = ({ onScanSuccess, hintText = 'Scan QR Code' }) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0, img.width, img.height);
         try {
-          const imageData = ctx.getImageData(0, 0, img.width, img.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code && code.data && code.data.trim()) {
-            const rawVal = code.data.trim();
-            setScannedResult(rawVal);
-            setScanSuccess(true);
-            onScanSuccess(rawVal);
-          } else {
-            setCameraError('No valid QR code was detected in this image. Please ensure the QR is clear and well-lit.');
+          if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+            try {
+              const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+              const barcodes = await detector.detect(img);
+              if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                const rawVal = barcodes[0].rawValue.trim();
+                setScannedResult(rawVal);
+                setScanSuccess(true);
+                onScanSuccess(rawVal);
+                return;
+              }
+            } catch (_) {}
           }
+
+          const decoder = await getJsQR();
+          if (decoder) {
+            const imageData = ctx.getImageData(0, 0, img.width, img.height);
+            const code = decoder(imageData.data, imageData.width, imageData.height);
+            if (code && code.data && code.data.trim()) {
+              const rawVal = code.data.trim();
+              setScannedResult(rawVal);
+              setScanSuccess(true);
+              onScanSuccess(rawVal);
+              return;
+            }
+          }
+          setCameraError('No valid QR code was detected in this image. Please ensure the QR is clear and well-lit.');
         } catch (readErr) {
           setCameraError('Failed to decode the uploaded image.');
         }

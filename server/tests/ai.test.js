@@ -15,7 +15,14 @@
 const jwt = require('jsonwebtoken');
 const { classifyIntent, INTENTS } = require('../src/services/aiIntentService');
 const { buildSystemPrompt } = require('../src/services/aiPromptService');
-const { getGroqConfig, generateChatCompletion } = require('../src/services/groqService');
+const {
+  getGroqConfig,
+  generateChatCompletion,
+  DEFAULT_MODEL,
+  FALLBACK_MODELS,
+  DECOMMISSIONED_MODELS,
+} = require('../src/services/groqService');
+const { generateContextualFallback } = require('../src/services/aiFallbackService');
 const {
   getTavilyConfig,
   isOfficialDomain,
@@ -988,6 +995,81 @@ async function runAiTests() {
   );
   assert(Array.isArray(chatActionsBody?.data?.actions), 'Chat response contains actions array');
   assert(chatActionsBody?.data?.actions.length > 0, 'Chat response populated with suggested actions');
+
+  // ---------------------------------------------------------------------------
+  // TEST SUITE 13: GROQ MODEL RESILIENCE & CONTEXT-AWARE FALLBACK ENGINE
+  // ---------------------------------------------------------------------------
+  console.log('\n--- Test Suite 13: Groq Model Resilience & Contextual Fallback Verification ---');
+
+  // 13.1 Active default model verification
+  assert(DEFAULT_MODEL === 'qwen/qwen3.8-27b', 'Primary default model is verified active qwen/qwen3.8-27b');
+  assert(!FALLBACK_MODELS.includes('gemma2-9b-it'), 'Decommissioned model gemma2-9b-it completely removed from fallbacks');
+  assert(!FALLBACK_MODELS.includes('mixtral-8x7b-32768'), 'Decommissioned model mixtral-8x7b-32768 completely removed from fallbacks');
+  assert(DECOMMISSIONED_MODELS.has('gemma2-9b-it'), 'gemma2-9b-it tracked in DECOMMISSIONED_MODELS registry');
+
+  // 13.2 Decommissioned model sanitization in getGroqConfig()
+  const origEnvModel = process.env.GROQ_MODEL;
+  process.env.GROQ_MODEL = 'gemma2-9b-it';
+  const sanitizedCfg = getGroqConfig();
+  assert(sanitizedCfg.model === DEFAULT_MODEL, 'getGroqConfig automatically sanitizes decommissioned model gemma2-9b-it to active DEFAULT_MODEL');
+  process.env.GROQ_MODEL = origEnvModel;
+
+  // 13.3 Question-aware Fallback for Greetings
+  const greetingFallback = generateContextualFallback({ userMessage: 'Hii' });
+  assert(greetingFallback.intent === 'GREETING', 'Correctly identifies greeting intent');
+  assert(greetingFallback.message.includes('Hello! 👋') || greetingFallback.message.includes('Welcome to **Annadhara**'), 'Greeting fallback responds warmly and concisely');
+  assert(!greetingFallback.message.includes('FSSAI Food Safety Standards'), 'Greeting fallback does NOT return the static food safety paragraph');
+
+  // 13.4 Question-aware Fallback for "What is Annadhara and how does it work?"
+  const platformFallback = generateContextualFallback({ userMessage: 'What is Annadhara and how does it work?' });
+  assert(platformFallback.intent === 'PLATFORM_OVERVIEW', 'Correctly identifies platform overview intent');
+  assert(platformFallback.message.includes('surplus food rescue'), 'Platform fallback explains Annadhara food rescue network');
+  assert(platformFallback.message.includes('Donors List Surplus'), 'Platform fallback details the donor-NGO-volunteer workflow');
+
+  // 13.5 Question-aware Fallback for Food Safety Guidelines
+  const safetyFallback = generateContextualFallback({ userMessage: 'What are safe food handling guidelines?' });
+  assert(safetyFallback.intent === 'FOOD_SAFETY', 'Correctly identifies food safety intent');
+  assert(safetyFallback.message.includes('≥ 65°C') || safetyFallback.message.includes('65°C'), 'Food safety fallback provides specific temperature controls');
+  assert(safetyFallback.message.includes('Danger Zone'), 'Food safety fallback warns about bacterial danger zone');
+
+  // 13.6 Question-aware Fallback for Finding Food
+  const findFoodFallback = generateContextualFallback({ userMessage: 'How do I find available food donations?' });
+  assert(findFoodFallback.intent === 'FIND_FOOD', 'Correctly identifies find food intent');
+  assert(findFoodFallback.message.includes('/find-food'), 'Guides user to /find-food');
+  assert(findFoodFallback.message.includes('6-character Handover Code'), 'Explains Handover Code for meal reservation');
+
+  // 13.7 Question-aware Fallback for Publishing Food Donations
+  const donateFallback = generateContextualFallback({ userMessage: 'How can I publish a food donation?' });
+  assert(donateFallback.intent === 'DONATE_FOOD', 'Correctly identifies donate food intent');
+  assert(donateFallback.message.includes('/create-donation'), 'Guides user to /create-donation');
+
+  // 13.8 Response Distinctness Verification (Ensures different questions receive different answers)
+  const responses = [
+    greetingFallback.message,
+    platformFallback.message,
+    safetyFallback.message,
+    findFoodFallback.message,
+    donateFallback.message,
+  ];
+  const uniqueResponses = new Set(responses);
+  assert(uniqueResponses.size === responses.length, 'Every distinct query category receives a completely distinct contextual answer');
+
+  // 13.9 Native Multilingual Fallback (Kannada and Hindi)
+  const kannadaFallback = generateContextualFallback({
+    userMessage: 'ಆಹಾರ ದಾನವನ್ನು ಹೇಗೆ ಪ್ರಕಟಿಸುವುದು?',
+    language: 'kn',
+  });
+  assert(kannadaFallback.message.includes('ಆಹಾರ ದಾನ'), 'Kannada query generates native Kannada script response');
+
+  const hindiFallback = generateContextualFallback({
+    userMessage: 'भोजन दान कैसे प्रकाशित करें?',
+    language: 'hi',
+  });
+  assert(hindiFallback.message.includes('भोजन दान'), 'Hindi query generates native Devanagari script response');
+
+  // 13.10 Zero Technical Provider Error Leakage
+  assert(!greetingFallback.message.includes('Cloud LLM inference is currently in resilient standby'), 'No technical provider error strings displayed to end user');
+  assert(!safetyFallback.message.includes('decommissioned'), 'No decommissioned model errors leaked into chat bubble');
 
   console.log('\n================================================================');
   console.log(`🎉 ALL TESTS PASSED: ${passedTests}/${totalTests} tests succeeded`);

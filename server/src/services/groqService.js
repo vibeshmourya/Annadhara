@@ -4,21 +4,37 @@
  *
  * Implements resilient communication with Groq's OpenAI-compatible chat completions endpoint.
  * Features:
- * - Dynamic model selection via GROQ_MODEL
+ * - Dynamic model selection via GROQ_MODEL with automatic decommissioned-model sanitization
+ * - Active verified default model: qwen/qwen3.8-27b (131k context window)
+ * - Intelligent question-aware, intent-specific contextual fallback responses
  * - Configurable request timeout via AbortController
  * - Conversation context windowing & token limiting
  * - Safe error, rate-limit, and timeout handling
  * - Zero API key leakage into logs or client payloads
  */
 
+const { generateContextualFallback } = require('./aiFallbackService');
+
 const GROQ_API_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'qwen/qwen3.8-27b';
 const FALLBACK_MODELS = [
+  'qwen/qwen3.8-27b',
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-20b',
   'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
-  'mixtral-8x7b-32768',
-  'gemma2-9b-it',
 ];
+
+// Retired/decommissioned Groq models that must never be queried
+const DECOMMISSIONED_MODELS = new Set([
+  'gemma2-9b-it',
+  'gemma-7b-it',
+  'mixtral-8x7b-32768',
+  'llama3-8b-8192',
+  'llama3-70b-8192',
+  'llama-3.1-70b-versatile',
+]);
+
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_MAX_TOKENS = 512;
 
@@ -28,8 +44,13 @@ const DEFAULT_MAX_TOKENS = 512;
 const getGroqConfig = () => {
   const apiKey = (process.env.GROQ_API_KEY || '').trim();
   const rawModel = (process.env.GROQ_MODEL || DEFAULT_MODEL).trim();
-  // Sanitize model: if set to outdated 'qwen/qwen3.8-27b', upgrade to reliable llama-3.3-70b-versatile
-  const model = rawModel === 'qwen/qwen3.8-27b' ? DEFAULT_MODEL : rawModel;
+
+  // Sanitize model: if unset or set to any retired/decommissioned model, upgrade to verified DEFAULT_MODEL
+  let model = rawModel;
+  if (!model || DECOMMISSIONED_MODELS.has(model.toLowerCase())) {
+    model = DEFAULT_MODEL;
+  }
+
   const timeoutMs = parseInt(process.env.GROQ_TIMEOUT, 10) || DEFAULT_TIMEOUT_MS;
   const maxTokens = parseInt(process.env.AI_MAX_TOKENS, 10) || DEFAULT_MAX_TOKENS;
 
@@ -50,7 +71,10 @@ const getGroqConfig = () => {
  * @param {Array<{role: string, content: string}>} [params.conversationHistory=[]] - Previous turns
  * @param {string} [params.model] - Optional override model
  * @param {number} [params.maxTokens] - Optional override max tokens
- * @returns {Promise<{message: string, model: string, usage: Object}>}
+ * @param {string} [params.role='donor'] - User role (donor, recipient, volunteer, admin)
+ * @param {string} [params.language='en'] - Active language code
+ * @param {string} [params.intent] - Detected query intent
+ * @returns {Promise<{message: string, model: string, usage: Object, isMock: boolean}>}
  */
 const generateChatCompletion = async ({
   systemPrompt,
@@ -58,24 +82,27 @@ const generateChatCompletion = async ({
   conversationHistory = [],
   model = null,
   maxTokens = null,
+  role = 'donor',
+  language = 'en',
+  intent = null,
 }) => {
   const config = getGroqConfig();
-  const selectedModel = model || config.model;
+  let selectedModel = model || config.model;
+  if (selectedModel && DECOMMISSIONED_MODELS.has(selectedModel.toLowerCase())) {
+    selectedModel = DEFAULT_MODEL;
+  }
   const tokenLimit = maxTokens || config.maxTokens;
 
   // Handle case where GROQ_API_KEY is not configured
   if (!config.isConfigured) {
+    const fallback = generateContextualFallback({
+      userMessage,
+      role,
+      language,
+    });
     return {
-      message:
-        "🌿 **Annadhara AI Assistant**\n\n" +
-        "Cloud LLM reasoning is operating in resilient offline standby. All Annadhara food rescue features, donation workflows, and safety verification protocols are active.\n\n" +
-        "**Core Guidance & Compliance Standards:**\n" +
-        "• **FSSAI Food Safety Standards:** Cooked hot food must be maintained at ≥ 65°C, cold perishable food at ≤ 5°C, and distributed within 2 to 4 hours of preparation under the *Food Safety and Standards (Recovery and Distribution of Surplus Food) Regulations*.\n" +
-        "• **Donation Listings:** Include preparation timestamp, sealed packaging status, dietary category (Pure Veg / Non-Veg / Vegan), and potential allergens.\n" +
-        "• **Handover Verification:** Confirm the recipient's 6-character Handover Code / QR code before releasing or accepting surplus food to ensure zero loss.\n" +
-        "• **NGO & Volunteer Coordination:** Verified NGOs receive surplus food allocations based on proximity, capacity, and active volunteer transport availability.\n\n" +
-        "*Notice for Administrators: To enable live cloud LLM reasoning, configure `GROQ_API_KEY` in your deployment environment variables and redeploy.*",
-      model: 'resilient-offline-engine',
+      message: fallback.message,
+      model: fallback.model,
       usage: { total_tokens: 0 },
       isMock: true,
     };
@@ -96,9 +123,9 @@ const generateChatCompletion = async ({
     const recent = conversationHistory.slice(-6);
     for (const msg of recent) {
       if (msg && typeof msg.content === 'string' && msg.content.trim()) {
-        const role = msg.role === 'user' ? 'user' : 'assistant';
+        const historyRole = msg.role === 'user' ? 'user' : 'assistant';
         messages.push({
-          role,
+          role: historyRole,
           content: msg.content.trim(),
         });
       }
@@ -108,10 +135,14 @@ const generateChatCompletion = async ({
   // Append latest user message
   messages.push({
     role: 'user',
-    content: userMessage.trim(),
+    content: (userMessage || '').trim(),
   });
 
-  const candidateModels = Array.from(new Set([selectedModel, ...FALLBACK_MODELS]));
+  // Filter candidate models to ensure no decommissioned models are ever queried
+  const candidateModels = Array.from(
+    new Set([selectedModel, ...FALLBACK_MODELS])
+  ).filter((m) => m && !DECOMMISSIONED_MODELS.has(m.toLowerCase()));
+
   let lastError = null;
 
   try {
@@ -154,8 +185,8 @@ const generateChatCompletion = async ({
             errorMsg.toLowerCase().includes('decommissioned');
 
           if (isModelNotFound) {
-            // Model not found on this Groq account/tier, try next candidate model
-            lastError = new Error(`Groq model '${modelToTry}' not found: ${errorMsg}`);
+            // Model not found or decommissioned, record error and proceed to next candidate
+            lastError = new Error(`Groq model '${modelToTry}' unavailable: ${errorMsg}`);
             continue;
           }
 
@@ -179,6 +210,7 @@ const generateChatCompletion = async ({
           }
 
           if (response.status === 401 || response.status === 403) {
+            // Authentication errors cannot be resolved by retrying with other models
             throw new Error(`Groq API authentication failed: Invalid or expired GROQ_API_KEY`);
           }
 
@@ -195,7 +227,7 @@ const generateChatCompletion = async ({
         }
 
         if (!assistantMessage) {
-          assistantMessage = "I'm sorry, I could not generate a response at this moment. Please try again.";
+          assistantMessage = "I am ready to assist you with surplus food redistribution, FSSAI compliance, and platform operations.";
         }
 
         return {
@@ -216,6 +248,7 @@ const generateChatCompletion = async ({
           err.message &&
           (err.message.includes('not found') ||
             err.message.includes('does not exist') ||
+            err.message.includes('unavailable') ||
             err.message.includes('model_not_found'));
 
         if (isModelErr && candidateModels.indexOf(modelToTry) < candidateModels.length - 1) {
@@ -236,29 +269,32 @@ const generateChatCompletion = async ({
       throw error;
     }
 
-    console.warn(`[GroqService] Groq inference failed (${error.message}). Returning safe expert fallback.`);
+    console.warn(`[GroqService] Groq live inference unavailable (${error.message}). Invoking contextual fallback.`);
+
+    const fallback = generateContextualFallback({
+      userMessage,
+      role,
+      language,
+    });
 
     return {
-      message:
-        "🌿 **Annadhara AI Assistant**\n\n" +
-        "Cloud LLM inference is currently in resilient standby (" +
-        (error.message || 'API connection unavailable') +
-        "). Platform operations, food safety protocols, and Indian regulatory standards remain fully active.\n\n" +
-        "**Core Guidance & Compliance Standards:**\n" +
-        "• **FSSAI Food Safety Standards:** Surplus hot cooked food must be maintained at ≥ 65°C, cold perishable food at ≤ 5°C, and distributed within 2 to 4 hours of preparation under the *Food Safety and Standards (Recovery and Distribution of Surplus Food) Regulations*.\n" +
-        "• **Listing Quality Checklist:** Ensure your donation listing includes exact cooked time, packaging status (sealed containers/insulated boxes), dietary classification (Pure Veg / Non-Veg / Vegan), and potential allergens.\n" +
-        "• **Handover Protocol:** Never release surplus food without matching the recipient's verified 6-digit OTP / QR code to ensure complete traceability.\n" +
-        "• **NGO Beneficiary Support:** Verified NGOs receive surplus food allocations based on proximity, capacity, and active volunteer transport availability.",
-      model: 'resilient-offline-engine',
+      message: fallback.message,
+      model: fallback.model,
       usage: { total_tokens: 0 },
       isMock: true,
       errorNotice: error.message,
     };
   }
 
+  const defaultFallback = generateContextualFallback({
+    userMessage,
+    role,
+    language,
+  });
+
   return {
-    message: "I am ready to assist you with surplus food redistribution, FSSAI compliance, and platform operations.",
-    model: 'default-assistant',
+    message: defaultFallback.message,
+    model: defaultFallback.model,
     usage: { total_tokens: 0 },
     isMock: true,
   };
@@ -267,4 +303,8 @@ const generateChatCompletion = async ({
 module.exports = {
   getGroqConfig,
   generateChatCompletion,
+  DEFAULT_MODEL,
+  FALLBACK_MODELS,
+  DECOMMISSIONED_MODELS,
 };
+

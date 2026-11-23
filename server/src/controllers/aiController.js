@@ -313,6 +313,9 @@ const chat = async (req, res, next) => {
       systemPrompt,
       userMessage: cleanMessage,
       conversationHistory: effectiveHistory,
+      role,
+      language: selectedLanguage,
+      intent,
     });
 
     // 12. Determine suggested actions

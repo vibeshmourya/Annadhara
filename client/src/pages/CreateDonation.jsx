@@ -27,6 +27,9 @@ import {
   DEFAULT_FOOD_IMAGE,
   resolveImageUrl,
   getCategoryFallbackImage,
+  getFoodSpecificImage,
+  FOOD_DISH_IMAGES,
+  NEUTRAL_FOOD_PLACEHOLDER_SVG,
 } from '../constants/india';
 import { reverseGeocodeCoordinates } from '../utils/reverseGeocode';
 
@@ -38,62 +41,74 @@ const FOOD_PRESETS = [
   {
     name: 'Rice & Meals',
     category: 'rice_meals',
-    url: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.rice_meals,
     icon: '🍚',
   },
   {
     name: 'Roti & Chapati',
     category: 'roti_chapati',
-    url: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.roti_chapati,
     icon: '🫓',
   },
   {
     name: 'Dum Biryani',
     category: 'biryani',
-    url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.biryani,
     icon: '🍲',
   },
   {
     name: 'Idli & Sambar',
     category: 'idli_dosa',
-    url: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.idli,
     icon: '🥞',
   },
   {
     name: 'Crispy Dosa',
     category: 'idli_dosa',
-    url: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.dosa,
     icon: '🥞',
   },
   {
     name: 'Paneer & Curries',
     category: 'cooked_meals',
-    url: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.paneer,
     icon: '🍛',
   },
   {
     name: 'Samosa & Snacks',
     category: 'snacks',
-    url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.samosa,
     icon: '🥟',
   },
   {
     name: 'Fresh Farm Fruits',
     category: 'fruits',
-    url: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.fruits,
     icon: '🍎',
   },
   {
     name: 'Bakery & Pav Buns',
     category: 'bakery_items',
-    url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.bread,
     icon: '🍞',
   },
   {
     name: 'Packaged Food',
     category: 'packaged_food',
-    url: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
+    url: FOOD_DISH_IMAGES.packaged_food,
     icon: '📦',
+  },
+  {
+    name: 'Pizza & Fast Food',
+    category: 'snacks',
+    url: FOOD_DISH_IMAGES.pizza,
+    icon: '🍕',
+  },
+  {
+    name: 'Noodles & Pasta',
+    category: 'cooked_meals',
+    url: FOOD_DISH_IMAGES.noodles,
+    icon: '🍜',
   },
 ];
 
@@ -225,12 +240,21 @@ export const CreateDonation = () => {
         [name]: type === 'checkbox' ? checked : value,
       };
 
-      // When category changes, auto-select matching authentic preset image if not custom-uploaded
-      if (name === 'category') {
-        const isPreset = FOOD_PRESETS.some((p) => p.url === prev.imageUrl);
-        if (isPreset || !prev.imageUrl) {
-          const match = FOOD_PRESETS.find((p) => p.category === value) || FOOD_PRESETS[0];
-          nextData.imageUrl = match.url;
+      // Check if current image is a preset, fallback or empty (not custom file upload or direct URL)
+      const isPreset =
+        FOOD_PRESETS.some((p) => p.url === prev.imageUrl) ||
+        Object.values(FOOD_DISH_IMAGES).includes(prev.imageUrl) ||
+        !prev.imageUrl ||
+        prev.imageUrl === DEFAULT_FOOD_IMAGE;
+
+      if (isPreset && imageTab !== 'upload' && !prev.imageUrl.startsWith('/uploads') && !prev.imageUrl.startsWith('data:')) {
+        const nextTitle = name === 'title' ? value : prev.title;
+        const nextCat = name === 'category' ? value : prev.category;
+        if (name === 'category') {
+          const match = FOOD_PRESETS.find((p) => p.category === value);
+          nextData.imageUrl = match ? match.url : getFoodSpecificImage(nextTitle, nextCat);
+        } else if (name === 'title' && value.trim().length > 2) {
+          nextData.imageUrl = getFoodSpecificImage(nextTitle, nextCat);
         }
       }
 
@@ -336,7 +360,13 @@ export const CreateDonation = () => {
         },
         pickupStartTime: new Date(formData.pickupStartTime).toISOString(),
         pickupEndTime: new Date(formData.pickupEndTime).toISOString(),
-        imageUrl: formData.imageUrl,
+        imageUrl:
+          formData.imageUrl &&
+          (formData.imageUrl.startsWith('/uploads') ||
+            formData.imageUrl.startsWith('data:image/') ||
+            formData.imageUrl.startsWith('blob:'))
+            ? formData.imageUrl
+            : resolveImageUrl(formData.imageUrl, formData.category, formData.title),
         safetyGuidelinesAccepted: true,
       };
 
@@ -573,7 +603,8 @@ export const CreateDonation = () => {
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = getCategoryFallbackImage(formData.category, formData.title);
+                      const fallback = getCategoryFallbackImage(formData.category, formData.title);
+                      e.target.src = fallback && fallback !== e.target.src ? fallback : NEUTRAL_FOOD_PLACEHOLDER_SVG;
                     }}
                   />
                 ) : (

@@ -17,9 +17,9 @@ This guide covers deployment procedures for all components of the Annadhara Surp
 3. **Configure Network Access:**
    - Under **Network Access**, whitelist your production backend IP addresses.
    - For serverless hosts (e.g. Render/Railway), allow access from anywhere (`0.0.0.0/0`) with strict database authentication credentials.
-4. **Obtain Connection String** (note: database name `foodbridge` is retained for existing MongoDB compatibility unless provisioning a brand-new cluster):
+4. **Obtain Connection String** (database name `annadhara`):
    ```
-   mongodb+srv://<username>:<password>@cluster0.annadhara.mongodb.net/foodbridge?retryWrites=true&w=majority
+   mongodb+srv://<username>:<password>@cluster0.annadhara.mongodb.net/annadhara?retryWrites=true&w=majority
    ```
 
 ---
@@ -33,7 +33,7 @@ This guide covers deployment procedures for all components of the Annadhara Surp
    ```env
    NODE_ENV=production
    PORT=5000
-   MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.annadhara.mongodb.net/foodbridge?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.annadhara.mongodb.net/annadhara?retryWrites=true&w=majority
    JWT_SECRET=<your_64_char_random_production_secret>
    JWT_EXPIRES_IN=7d
    CLIENT_URL=https://app.annadhara.org

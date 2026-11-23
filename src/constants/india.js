@@ -228,87 +228,336 @@ export const INDIAN_CITIES = [
   'Mangaluru',
 ];
 
-// Verified high-resolution authentic Indian food images for category-specific fallbacks
-export const CATEGORY_FALLBACK_IMAGES = {
+// Self-contained, brand-aligned SVG placeholder for zero-network / offline / error states
+export const NEUTRAL_FOOD_PLACEHOLDER_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400" fill="none">
+    <rect width="600" height="400" fill="#EAF4EE"/>
+    <circle cx="300" cy="180" r="70" fill="#2E7D5B" fill-opacity="0.12"/>
+    <path d="M260 210C260 210 270 230 300 230C330 230 340 210 340 210H260Z" fill="#2E7D5B"/>
+    <path d="M250 200C250 172.386 272.386 150 300 150C327.614 150 350 172.386 350 200H250Z" fill="#2E7D5B"/>
+    <circle cx="300" cy="142" r="6" fill="#2E7D5B"/>
+    <rect x="235" y="202" width="130" height="6" rx="3" fill="#205B43"/>
+    <text x="300" y="275" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#205B43" text-anchor="middle">Annadhara Food Rescue</text>
+    <text x="300" y="298" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#718078" text-anchor="middle">Surplus Food • Shared Hope</text>
+  </svg>`
+)}`;
+
+// Verified high-resolution authentic dish-specific food images
+export const FOOD_DISH_IMAGES = {
+  // Biryani & Rice Specialities
   biryani: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
-  idli_dosa: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
-  dosa: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80',
-  roti_chapati: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
+  pulao: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
+  fried_rice: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&auto=format&fit=crop&q=80',
+  curd_rice: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
+  lemon_rice: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
+  dal_rice: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
+  sambar_rice: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
   rice_meals: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?w=800&auto=format&fit=crop&q=80',
-  curry_dal: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&auto=format&fit=crop&q=80',
+  veg_meals: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
+
+  // Indian Breads & Tandoor
+  roti_chapati: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
+  paratha: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=800&auto=format&fit=crop&q=80',
+  poori: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=800&auto=format&fit=crop&q=80',
+  naan: 'https://images.unsplash.com/photo-1626074353765-517a681e40be?w=800&auto=format&fit=crop&q=80',
+
+  // South Indian Tiffin
+  idli: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
+  dosa: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=800&auto=format&fit=crop&q=80',
+  sambar: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&auto=format&fit=crop&q=80',
+
+  // Curries & Gravies
   paneer: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80',
+  chicken_curry: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&auto=format&fit=crop&q=80',
+  curry_dal: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&auto=format&fit=crop&q=80',
+
+  // Snacks & Fast Food
+  samosa: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80',
   snacks: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80',
+  sandwich: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=800&auto=format&fit=crop&q=80',
+  pizza: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop&q=80',
+  burger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80',
+  noodles: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&auto=format&fit=crop&q=80',
+  pasta: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281292?w=800&auto=format&fit=crop&q=80',
+
+  // Bakery, Sweets & Produce
+  cake: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=80',
+  sweets: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=800&auto=format&fit=crop&q=80',
+  bread: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
   fruits: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
-  produce_fresh: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&auto=format&fit=crop&q=80',
   vegetables: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
-  bakery_items: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
-  bakery_grains: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80',
   packaged_food: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
-  packaged_groceries: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
-  groceries: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=800&auto=format&fit=crop&q=80',
-  cooked_meals: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
-  dairy_products: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=800&auto=format&fit=crop&q=80',
   beverages: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=800&auto=format&fit=crop&q=80',
-  other: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
+  default_meal: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=800&auto=format&fit=crop&q=80',
 };
 
-// Default high-resolution authentic Indian meal fallback image
-export const DEFAULT_FOOD_IMAGE = CATEGORY_FALLBACK_IMAGES.cooked_meals;
+// Backwards-compatible category image dictionary
+export const CATEGORY_FALLBACK_IMAGES = {
+  biryani: FOOD_DISH_IMAGES.biryani,
+  idli_dosa: FOOD_DISH_IMAGES.idli,
+  dosa: FOOD_DISH_IMAGES.dosa,
+  roti_chapati: FOOD_DISH_IMAGES.roti_chapati,
+  rice_meals: FOOD_DISH_IMAGES.rice_meals,
+  curry_dal: FOOD_DISH_IMAGES.curry_dal,
+  paneer: FOOD_DISH_IMAGES.paneer,
+  snacks: FOOD_DISH_IMAGES.snacks,
+  fruits: FOOD_DISH_IMAGES.fruits,
+  produce_fresh: FOOD_DISH_IMAGES.fruits,
+  vegetables: FOOD_DISH_IMAGES.vegetables,
+  bakery_items: FOOD_DISH_IMAGES.bread,
+  bakery_grains: FOOD_DISH_IMAGES.bread,
+  packaged_food: FOOD_DISH_IMAGES.packaged_food,
+  packaged_groceries: FOOD_DISH_IMAGES.packaged_food,
+  groceries: FOOD_DISH_IMAGES.packaged_food,
+  cooked_meals: FOOD_DISH_IMAGES.veg_meals,
+  dairy_products: FOOD_DISH_IMAGES.paneer,
+  beverages: FOOD_DISH_IMAGES.beverages,
+  other: FOOD_DISH_IMAGES.default_meal,
+};
+
+// Default authentic Indian meal fallback image
+export const DEFAULT_FOOD_IMAGE = FOOD_DISH_IMAGES.default_meal;
+
+/**
+ * Returns an authentic, visually accurate food image based on exact food dish title and category.
+ * Exact dish matches in title take precedence over broad category mappings.
+ */
+export const getFoodSpecificImage = (title = '', category = '') => {
+  const t = (title || '').toLowerCase().trim();
+  const c = (category || '').toLowerCase().trim();
+
+  // 1. Biryani (Hyderabadi, Dum, Chicken, Veg, Mutton)
+  if (t.includes('biryani') || t.includes('briyani') || t.includes('biriyani')) {
+    return FOOD_DISH_IMAGES.biryani;
+  }
+
+  // 2. Curd Rice
+  if (t.includes('curd rice') || t.includes('thayir sadam') || t.includes('mosaranna') || t.includes('dahi chawal') || t.includes('dahi rice')) {
+    return FOOD_DISH_IMAGES.curd_rice;
+  }
+
+  // 3. Lemon Rice / Tamarind Rice
+  if (t.includes('lemon rice') || t.includes('chitranna') || t.includes('pulihora') || t.includes('puliyodharai') || t.includes('tamarind rice')) {
+    return FOOD_DISH_IMAGES.lemon_rice;
+  }
+
+  // 4. Fried Rice
+  if (t.includes('fried rice') || t.includes('schezwan rice') || t.includes('egg fried rice')) {
+    return FOOD_DISH_IMAGES.fried_rice;
+  }
+
+  // 5. Pulao / Pilaf
+  if (t.includes('pulao') || t.includes('pulav') || t.includes('pilaf') || t.includes('pehra')) {
+    return FOOD_DISH_IMAGES.pulao;
+  }
+
+  // 6. Dal Rice / Rajma Chawal / Chole Chawal / Khichdi / Pongal / Bisi Bele Bath
+  if (
+    t.includes('dal rice') ||
+    t.includes('dal chawal') ||
+    t.includes('rajma chawal') ||
+    t.includes('chole chawal') ||
+    t.includes('khichdi') ||
+    t.includes('pongal') ||
+    t.includes('bisi bele bath') ||
+    t.includes('sambar rice')
+  ) {
+    return FOOD_DISH_IMAGES.dal_rice;
+  }
+
+  // 7. Paratha / Parotta / Aloo Paratha
+  if (t.includes('paratha') || t.includes('parotta') || t.includes('pratha')) {
+    return FOOD_DISH_IMAGES.paratha;
+  }
+
+  // 8. Poori / Puri / Bhature / Chole Bhature
+  if (t.includes('poori') || t.includes('puri') || t.includes('bhature') || t.includes('bhatura')) {
+    return FOOD_DISH_IMAGES.poori;
+  }
+
+  // 9. Chapati / Roti / Phulka / Naan / Kulcha
+  if (t.includes('roti') || t.includes('chapati') || t.includes('chapatti') || t.includes('phulka') || t.includes('fulka') || t.includes('tandoori roti')) {
+    return FOOD_DISH_IMAGES.roti_chapati;
+  }
+  if (t.includes('naan') || t.includes('kulcha')) {
+    return FOOD_DISH_IMAGES.naan;
+  }
+
+  // 10. Dosa / Masala Dosa / Uttapam
+  if (t.includes('dosa') || t.includes('dosai') || t.includes('uttapam') || t.includes('oothappam') || t.includes('pesrattu')) {
+    return FOOD_DISH_IMAGES.dosa;
+  }
+
+  // 11. Idli / Steamed Idli / Thatte Idli / Vada
+  if (t.includes('idli') || t.includes('idly') || t.includes('vada') || t.includes('vadai') || t.includes('medu vada')) {
+    return FOOD_DISH_IMAGES.idli;
+  }
+
+  // 12. Sambar / Rasam
+  if (t.includes('sambar') || t.includes('sambhar') || t.includes('rasam')) {
+    return FOOD_DISH_IMAGES.sambar;
+  }
+
+  // 13. Paneer
+  if (t.includes('paneer') || t.includes('panir')) {
+    return FOOD_DISH_IMAGES.paneer;
+  }
+
+  // 14. Non-Veg Curries: Chicken, Mutton, Fish, Egg
+  if (
+    t.includes('chicken') ||
+    t.includes('murgh') ||
+    t.includes('mutton') ||
+    t.includes('fish curry') ||
+    t.includes('egg curry') ||
+    t.includes('meat') ||
+    t.includes('butter chicken')
+  ) {
+    return FOOD_DISH_IMAGES.chicken_curry;
+  }
+
+  // 15. Dal / Lentils / Sambar / Curry
+  if (t.includes('dal') || t.includes('daal') || t.includes('dhal') || t.includes('tadka') || t.includes('makhani') || t.includes('korma') || t.includes('kurma') || t.includes('curry') || t.includes('gravy')) {
+    return FOOD_DISH_IMAGES.curry_dal;
+  }
+
+  // 16. Samosa / Pakora / Bhajiya / Vada Pav / Kachori
+  if (t.includes('samosa') || t.includes('pakora') || t.includes('pakoda') || t.includes('bhajji') || t.includes('bhajiya') || t.includes('vada pav') || t.includes('kachori') || t.includes('dhokla')) {
+    return FOOD_DISH_IMAGES.samosa;
+  }
+
+  // 17. Pizza
+  if (t.includes('pizza') || t.includes('calzone')) {
+    return FOOD_DISH_IMAGES.pizza;
+  }
+
+  // 18. Burger
+  if (t.includes('burger') || t.includes('patty')) {
+    return FOOD_DISH_IMAGES.burger;
+  }
+
+  // 19. Sandwich (exclude "sandwich bread" which is a loaf of bread)
+  if (t.includes('sandwich bread') || t.includes('bread loaf') || t.includes('loaf of bread')) {
+    return FOOD_DISH_IMAGES.bread;
+  }
+  if (t.includes('sandwich') || t.includes('toast') || t.includes('sub')) {
+    return FOOD_DISH_IMAGES.sandwich;
+  }
+
+  // 20. Noodles / Chowmein / Pasta
+  if (t.includes('noodle') || t.includes('noodles') || t.includes('chowmein') || t.includes('chow mein') || t.includes('maggi')) {
+    return FOOD_DISH_IMAGES.noodles;
+  }
+  if (t.includes('pasta') || t.includes('macaroni') || t.includes('spaghetti') || t.includes('penne')) {
+    return FOOD_DISH_IMAGES.pasta;
+  }
+
+  // 21. Cake / Pastry / Cupcake
+  if (t.includes('cake') || t.includes('pastry') || t.includes('cupcake') || t.includes('muffin')) {
+    return FOOD_DISH_IMAGES.cake;
+  }
+
+  // 22. Indian Sweets / Mithai
+  if (t.includes('sweet') || t.includes('mithai') || t.includes('gulab jamun') || t.includes('laddu') || t.includes('halwa') || t.includes('jalebi') || t.includes('kheer') || t.includes('pedha') || t.includes('barfi')) {
+    return FOOD_DISH_IMAGES.sweets;
+  }
+
+  // 23. Breads / Pav / Bakery
+  if (t.includes('bread') || t.includes('pav') || t.includes('bun') || t.includes('buns') || t.includes('bakery') || t.includes('loaf')) {
+    return FOOD_DISH_IMAGES.bread;
+  }
+
+  // 24. Fruits
+  if (t.includes('fruit') || t.includes('fruits') || t.includes('apple') || t.includes('banana') || t.includes('orange') || t.includes('mango') || t.includes('grape') || t.includes('papaya')) {
+    return FOOD_DISH_IMAGES.fruits;
+  }
+
+  // 25. Vegetables / Salad
+  if (t.includes('vegetable') || t.includes('vegetables') || t.includes('veggie') || t.includes('salad') || t.includes('sabzi') || t.includes('subzi') || t.includes('tarkari')) {
+    return FOOD_DISH_IMAGES.vegetables;
+  }
+
+  // 26. General Rice / Meals / Thali
+  if (t.includes('thali') || t.includes('meal') || t.includes('meals') || t.includes('bhojan') || t.includes('oota')) {
+    return FOOD_DISH_IMAGES.veg_meals;
+  }
+  if (t.includes('rice') || t.includes('chawal') || t.includes('anna')) {
+    return FOOD_DISH_IMAGES.rice_meals;
+  }
+
+  // 27. Tea / Coffee / Beverages
+  if (t.includes('tea') || t.includes('chai') || t.includes('coffee') || t.includes('juice') || t.includes('beverage') || t.includes('drink') || t.includes('lassi') || t.includes('buttermilk')) {
+    return FOOD_DISH_IMAGES.beverages;
+  }
+
+  // Level 2: Category-based Fallback (when title is too generic or non-specific)
+  if (c === 'biryani') return FOOD_DISH_IMAGES.biryani;
+  if (c === 'idli_dosa') return FOOD_DISH_IMAGES.idli;
+  if (c === 'roti_chapati') return FOOD_DISH_IMAGES.roti_chapati;
+  if (c === 'rice_meals') return FOOD_DISH_IMAGES.rice_meals;
+  if (c === 'curry_dal') return FOOD_DISH_IMAGES.curry_dal;
+  if (c === 'paneer') return FOOD_DISH_IMAGES.paneer;
+  if (c === 'snacks') return FOOD_DISH_IMAGES.snacks;
+  if (c === 'fruits' || c === 'produce_fresh') return FOOD_DISH_IMAGES.fruits;
+  if (c === 'vegetables') return FOOD_DISH_IMAGES.vegetables;
+  if (c === 'bakery_items' || c === 'bakery_grains') return FOOD_DISH_IMAGES.bread;
+  if (c === 'packaged_food' || c === 'packaged_groceries' || c === 'groceries') return FOOD_DISH_IMAGES.packaged_food;
+  if (c === 'beverages') return FOOD_DISH_IMAGES.beverages;
+  if (c === 'cooked_meals') return FOOD_DISH_IMAGES.veg_meals;
+
+  return FOOD_DISH_IMAGES.default_meal;
+};
 
 /**
  * Returns an accurate category-specific Indian food image based on donation category and title keywords
  */
 export const getCategoryFallbackImage = (category = '', title = '') => {
-  const text = `${title} ${category}`.toLowerCase();
-
-  if (text.includes('biryani') || text.includes('pulao')) return CATEGORY_FALLBACK_IMAGES.biryani;
-  if (text.includes('dosa')) return CATEGORY_FALLBACK_IMAGES.dosa;
-  if (text.includes('idli') || text.includes('vada') || text.includes('sambar')) return CATEGORY_FALLBACK_IMAGES.idli_dosa;
-  if (text.includes('paneer')) return CATEGORY_FALLBACK_IMAGES.paneer;
-  if (text.includes('roti') || text.includes('chapati') || text.includes('naan') || text.includes('paratha') || text.includes('kulcha')) {
-    return CATEGORY_FALLBACK_IMAGES.roti_chapati;
-  }
-  if (text.includes('fruit') || text.includes('apple') || text.includes('banana') || text.includes('orange') || text.includes('mango')) {
-    return CATEGORY_FALLBACK_IMAGES.fruits;
-  }
-  if (text.includes('vegetable') || text.includes('veggie') || text.includes('sabzi') || text.includes('salad')) {
-    return CATEGORY_FALLBACK_IMAGES.vegetables;
-  }
-  if (text.includes('samosa') || text.includes('snack') || text.includes('pakora') || text.includes('bhajji') || text.includes('kachori')) {
-    return CATEGORY_FALLBACK_IMAGES.snacks;
-  }
-  if (text.includes('bread') || text.includes('bun') || text.includes('bakery') || text.includes('cake') || text.includes('pav')) {
-    return CATEGORY_FALLBACK_IMAGES.bakery_items;
-  }
-  if (text.includes('curry') || text.includes('dal') || text.includes('korma') || text.includes('gravy')) {
-    return CATEGORY_FALLBACK_IMAGES.curry_dal;
-  }
-  if (text.includes('rice') || text.includes('meal') || text.includes('thali') || text.includes('khichdi')) {
-    return CATEGORY_FALLBACK_IMAGES.rice_meals;
-  }
-  if (text.includes('tea') || text.includes('chai') || text.includes('coffee') || text.includes('juice') || text.includes('beverage')) {
-    return CATEGORY_FALLBACK_IMAGES.beverages;
-  }
-
-  const catKey = (category || '').toLowerCase().trim();
-  return CATEGORY_FALLBACK_IMAGES[catKey] || CATEGORY_FALLBACK_IMAGES.cooked_meals;
+  return getFoodSpecificImage(title, category);
 };
 
 /**
- * Resolves food image URL, providing category-aware authentic fallback when empty or invalid
+ * Resolves food image URL, prioritizing user uploads and ensuring accurate dish matching for stock images
  */
 export const resolveImageUrl = (url, category = '', title = '') => {
-  if (!url || typeof url !== 'string' || !url.trim() || url.includes('placeholder')) {
-    return getCategoryFallbackImage(category, title);
+  if (!url || typeof url !== 'string' || !url.trim() || url.includes('placeholder') || url.includes('default')) {
+    return getFoodSpecificImage(title, category);
   }
+
   const trimmed = url.trim();
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-  if (trimmed.startsWith('data:image/')) return trimmed;
-  const apiBase = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL : '';
-  if (apiBase && (apiBase.startsWith('http://') || apiBase.startsWith('https://'))) {
-    const origin = apiBase.replace(/\/api\/?$/, '');
-    return `${origin}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+
+  // 1. Prioritize user-uploaded data URLs and blob URLs — NEVER override
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
+    return trimmed;
   }
+
+  // 2. Prioritize local backend uploads (/uploads/...) — NEVER override
+  if (trimmed.startsWith('/uploads') || trimmed.includes('/uploads/')) {
+    const apiBase = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL : '';
+    if (apiBase && (apiBase.startsWith('http://') || apiBase.startsWith('https://'))) {
+      const origin = apiBase.replace(/\/api\/?$/, '');
+      return `${origin}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+    }
+    return trimmed;
+  }
+
+  // 3. Remote HTTP/HTTPS URLs
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    // If the image URL is a generic fallback or stock image, but the title specifies a distinct dish,
+    // upgrade to the dish-specific image so that Biryani never displays pizza, etc.
+    const isGenericStock =
+      trimmed.includes('photo-1585937421612-70a008356fbe') || // yellow dal / general meal
+      trimmed.includes('photo-1546069901-ba9599a7e63c') || // generic salad
+      (trimmed.includes('photo-1610057099443-fde8c4d50f91') && !title.toLowerCase().includes('rice')); // rice preset for non-rice
+
+    if (isGenericStock && title && title.trim().length > 0) {
+      const specific = getFoodSpecificImage(title, category);
+      if (specific !== FOOD_DISH_IMAGES.default_meal) {
+        return specific;
+      }
+    }
+    return trimmed;
+  }
+
   return trimmed;
 };
 

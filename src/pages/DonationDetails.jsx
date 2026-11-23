@@ -19,7 +19,7 @@ import { ReservationModal } from '../components/donations/ReservationModal';
 import { Modal } from '../components/common/Modal';
 import { LoadingSpinner } from '../components/common/StatCard';
 import { useAuth } from '../context/AuthContext';
-import { formatIndianDate, FOOD_SAFETY_DISCLAIMER, resolveImageUrl, getCategoryFallbackImage } from '../constants/india';
+import { formatIndianDate, FOOD_SAFETY_DISCLAIMER, resolveImageUrl, getCategoryFallbackImage, NEUTRAL_FOOD_PLACEHOLDER_SVG } from '../constants/india';
 
 export const DonationDetails = () => {
   const { id } = useParams();
@@ -125,7 +125,8 @@ export const DonationDetails = () => {
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = getCategoryFallbackImage(donation.category, donation.title);
+                const fallback = getCategoryFallbackImage(donation.category, donation.title);
+                e.target.src = fallback && fallback !== e.target.src ? fallback : NEUTRAL_FOOD_PLACEHOLDER_SVG;
               }}
             />
             <div className="absolute top-4 left-4 flex flex-wrap gap-2">

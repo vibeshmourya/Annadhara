@@ -289,6 +289,6 @@ npm --prefix client run build
 - **UI/UX Design:** Material 3 & Tailwind Nature-Inspired Design System.
 - **QA & Security Engineering:** Concurrency, RBAC, and automated test suites.
 
-> **Technical Compatibility Note:** Internal database name (`foodbridge`), npm package names, localStorage keys, Android `applicationId` (`com.example.foodbridge_mobile`), and seeded demo admin email (`admin@foodbridge.org`) are intentionally retained for backward compatibility with existing MongoDB collections and build configurations.
+> **Technical Compatibility Note:** npm packages have been updated to Annadhara branding (`annadhara-client`, `annadhara-server`). Internal localStorage keys (`foodbridge_token`), Android `applicationId` / package namespace (`com.example.foodbridge_mobile`), and seeded demo admin email (`admin@foodbridge.org`) are intentionally retained for backward compatibility with existing authentication sessions, MongoDB collections, and native mobile build configurations.
 
 **License:** ISC License — Developed by **Team Seva Shakti** for **Annadhara — Surplus Food Rescue and Donation Network**.

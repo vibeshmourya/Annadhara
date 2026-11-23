@@ -1,5 +1,5 @@
 {
-  "name": "foodbridge-server",
+  "name": "annadhara-server",
   "version": "1.0.0",
   "description": "Shared REST API backend for Annadhara Surplus Food Rescue and Donation Network (MERNOVA X 2026)",
   "main": "server.js",

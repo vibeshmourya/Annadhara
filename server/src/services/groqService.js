@@ -67,13 +67,15 @@ const generateChatCompletion = async ({
   if (!config.isConfigured) {
     return {
       message:
-        "🌿 **Annadhara AI** is active, but `GROQ_API_KEY` is not yet configured on this server.\n\n" +
-        "To enable live AI inference:\n" +
-        "1. Obtain a free API key at [console.groq.com](https://console.groq.com)\n" +
-        "2. Add `GROQ_API_KEY=your_key` to `server/.env`\n" +
-        "3. Restart the backend server.\n\n" +
-        "As an intelligent food redistribution assistant, I am ready to help donors post food, assist NGOs in finding surplus, guide volunteers on pickup missions, and support administrators in governance.",
-      model: 'configuration-mode',
+        "🌿 **Annadhara AI Assistant**\n\n" +
+        "Cloud LLM reasoning is operating in resilient offline standby. All Annadhara food rescue features, donation workflows, and safety verification protocols are active.\n\n" +
+        "**Core Guidance & Compliance Standards:**\n" +
+        "• **FSSAI Food Safety Standards:** Cooked hot food must be maintained at ≥ 65°C, cold perishable food at ≤ 5°C, and distributed within 2 to 4 hours of preparation under the *Food Safety and Standards (Recovery and Distribution of Surplus Food) Regulations*.\n" +
+        "• **Donation Listings:** Include preparation timestamp, sealed packaging status, dietary category (Pure Veg / Non-Veg / Vegan), and potential allergens.\n" +
+        "• **Handover Verification:** Confirm the recipient's 6-character Handover Code / QR code before releasing or accepting surplus food to ensure zero loss.\n" +
+        "• **NGO & Volunteer Coordination:** Verified NGOs receive surplus food allocations based on proximity, capacity, and active volunteer transport availability.\n\n" +
+        "*Notice for Administrators: To enable live cloud LLM reasoning, configure `GROQ_API_KEY` in your deployment environment variables and redeploy.*",
+      model: 'resilient-offline-engine',
       usage: { total_tokens: 0 },
       isMock: true,
     };

@@ -281,15 +281,28 @@ class AiProvider with ChangeNotifier {
         final aiMsg = AiMessageModel.fromJson(data);
         _messages.add(aiMsg);
       } else {
-        _error = response.message.isNotEmpty
-            ? response.message
-            : 'Unable to receive response from Annadhara AI.';
+        if (response.statusCode == 429) {
+          _error = 'Annadhara AI request limit reached. Please wait a moment before trying again.';
+        } else {
+          _error = response.message.isNotEmpty
+              ? response.message
+              : 'Unable to connect to Annadhara AI right now. Please check your internet connection.';
+        }
       }
     } catch (e) {
-      _error = 'Connection error: ${e.toString()}';
+      _error = 'Unable to connect to Annadhara AI. Please check your internet connection and try again.';
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> retryLastMessage() async {
+    final lastUserIndex = _messages.lastIndexWhere((m) => m.role == 'user');
+    if (lastUserIndex != -1) {
+      final lastUserContent = _messages[lastUserIndex].content;
+      _messages.removeAt(lastUserIndex);
+      await sendMessage(lastUserContent);
     }
   }
 

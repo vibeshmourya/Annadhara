@@ -1,14 +1,20 @@
 import axios from 'axios';
 
 /**
+ * Production deployed backend URL for Annadhara (Vercel Serverless / Cloud)
+ */
+export const PRODUCTION_API_BASE_URL = 'https://annadhara-i83w.vercel.app/api';
+
+/**
  * Resolves and normalizes the API base URL from Vite environment variables or runtime overrides.
  *
  * Requirements handled:
  * 1. Reads production API base URL correctly from VITE_API_BASE_URL, VITE_API_URL, or VITE_BACKEND_URL.
  * 2. Checks runtime overrides (window.__ANNADHARA_API_BASE_URL__ or localStorage 'ANNADHARA_API_BASE_URL').
  * 3. Falls back safely during local development (returns '/api' for Vite dev proxy forwarding to localhost:5000).
- * 4. Does NOT fall back to relative '/api' in production if the backend is deployed on a separate domain,
- *    preventing accidental POST/PUT requests to the static frontend host that result in HTTP 405 / 404.
+ * 4. In production deployed on a remote domain without configured VITE_API_BASE_URL, defaults safely
+ *    to PRODUCTION_API_BASE_URL (https://annadhara-i83w.vercel.app/api), preventing accidental
+ *    requests to the static frontend host that would fail with Network Error or HTTP 405.
  * 5. Handles trailing slashes properly (prevents double slashes like /api//auth/login).
  * 6. Avoids duplicated prefixes (such as /api/api/auth/login).
  * 7. Automatically appends '/api' to domain-only URLs (e.g. https://backend.vercel.app -> https://backend.vercel.app/api).
@@ -68,9 +74,9 @@ export const resolveBaseUrl = () => {
   }
 
   // 4. In production deployed on a remote domain without configured VITE_API_BASE_URL:
-  // Do NOT fall back to relative '/api' on a remote frontend host because requests
-  // would be intercepted by static hosting and return HTTP 405 Method Not Allowed.
-  return '';
+  // Instead of leaving baseURL empty and causing "Network Error" on static hosting,
+  // safely default to the deployed Annadhara Vercel backend.
+  return PRODUCTION_API_BASE_URL;
 };
 
 export const apiBaseUrl = resolveBaseUrl();
@@ -83,21 +89,15 @@ export const isApiConfigured = () => {
   return Boolean(current && current.length > 0);
 };
 
-// Log clear runtime diagnostic warning if deployed to production without an API URL
+// Log runtime connection diagnostics in browser console
 if (typeof window !== 'undefined' && (typeof import.meta === 'undefined' || import.meta.env?.MODE !== 'test')) {
   const isLocal =
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1' ||
     window.location.hostname === '[::1]';
 
-  if (!isLocal && !apiBaseUrl) {
-    console.warn(
-      `[Annadhara] ⚠️ Production Warning: No API base URL configured.\n` +
-      `Your frontend is deployed on Vercel separately from your backend.\n` +
-      `Configure VITE_API_BASE_URL=https://<your-backend-project>.vercel.app/api in your frontend Vercel Project Settings (Environment Variables) and redeploy.\n` +
-      `You can also set it dynamically in the browser console via:\n` +
-      `localStorage.setItem('ANNADHARA_API_BASE_URL', 'https://<your-backend-project>.vercel.app/api'); location.reload();`
-    );
+  if (!isLocal) {
+    console.info(`[Annadhara] Connected to backend API: ${apiBaseUrl}`);
   }
 }
 
@@ -118,7 +118,7 @@ api.interceptors.request.use(
       config.baseURL = currentBase;
     }
 
-    // 2. Guard against unconfigured production backend
+    // 2. Guard and auto-fallback for production backend
     const isLocal =
       typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' ||
@@ -134,11 +134,7 @@ api.interceptors.request.use(
       !config.url?.startsWith('http://') &&
       !config.url?.startsWith('https://')
     ) {
-      const err = new Error(
-        'Annadhara API base URL is not configured for production. Please add VITE_API_BASE_URL=https://<your-backend>.vercel.app/api in Vercel Project Settings and redeploy.'
-      );
-      err.isConfigError = true;
-      return Promise.reject(err);
+      config.baseURL = PRODUCTION_API_BASE_URL;
     }
 
     // 3. Sanitize URL to avoid double slashes and duplicated /api prefixes

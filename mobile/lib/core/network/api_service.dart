@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -19,6 +20,8 @@ class ApiResponse {
 }
 
 class ApiService {
+  static const Duration _timeoutDuration = Duration(seconds: 30);
+
   static Future<Map<String, String>> _headers() async {
     final token = await StorageService.getToken();
     final headers = {
@@ -31,71 +34,103 @@ class ApiService {
     return headers;
   }
 
+  static String _formatException(dynamic e) {
+    if (e is TimeoutException) {
+      return 'Request timed out. The server may be warming up, please try again.';
+    }
+    if (e is SocketException) {
+      return 'Unable to connect to Annadhara server. Please check your internet connection.';
+    }
+    if (e is http.ClientException) {
+      return 'Network communication error. Please check your internet connection and try again.';
+    }
+    final str = e.toString();
+    if (str.toLowerCase().contains('timeout')) {
+      return 'Request timed out. The server may be warming up, please try again.';
+    }
+    if (str.toLowerCase().contains('socketexception') ||
+        str.toLowerCase().contains('connection refused') ||
+        str.toLowerCase().contains('failed host lookup')) {
+      return 'Unable to connect to Annadhara server. Please check your internet connection.';
+    }
+    return str;
+  }
+
   static Future<ApiResponse> get(String endpoint, {Map<String, String>? queryParams}) async {
     try {
       var uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       if (queryParams != null && queryParams.isNotEmpty) {
         uri = uri.replace(queryParameters: queryParams);
       }
-      final response = await http.get(uri, headers: await _headers());
+      final response = await http
+          .get(uri, headers: await _headers())
+          .timeout(_timeoutDuration);
       return _parseResponse(response);
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+      return ApiResponse(success: false, message: _formatException(e), statusCode: 500);
     }
   }
 
   static Future<ApiResponse> post(String endpoint, Map<String, dynamic> body) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-      final response = await http.post(
-        uri,
-        headers: await _headers(),
-        body: jsonEncode(body),
-      );
+      final response = await http
+          .post(
+            uri,
+            headers: await _headers(),
+            body: jsonEncode(body),
+          )
+          .timeout(_timeoutDuration);
       return _parseResponse(response);
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+      return ApiResponse(success: false, message: _formatException(e), statusCode: 500);
     }
   }
 
   static Future<ApiResponse> patch(String endpoint, Map<String, dynamic> body) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-      final response = await http.patch(
-        uri,
-        headers: await _headers(),
-        body: jsonEncode(body),
-      );
+      final response = await http
+          .patch(
+            uri,
+            headers: await _headers(),
+            body: jsonEncode(body),
+          )
+          .timeout(_timeoutDuration);
       return _parseResponse(response);
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+      return ApiResponse(success: false, message: _formatException(e), statusCode: 500);
     }
   }
 
   static Future<ApiResponse> put(String endpoint, Map<String, dynamic> body) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-      final response = await http.put(
-        uri,
-        headers: await _headers(),
-        body: jsonEncode(body),
-      );
+      final response = await http
+          .put(
+            uri,
+            headers: await _headers(),
+            body: jsonEncode(body),
+          )
+          .timeout(_timeoutDuration);
       return _parseResponse(response);
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+      return ApiResponse(success: false, message: _formatException(e), statusCode: 500);
     }
   }
 
   static Future<ApiResponse> delete(String endpoint) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
-      final response = await http.delete(
-        uri,
-        headers: await _headers(),
-      );
+      final response = await http
+          .delete(
+            uri,
+            headers: await _headers(),
+          )
+          .timeout(_timeoutDuration);
       return _parseResponse(response);
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+      return ApiResponse(success: false, message: _formatException(e), statusCode: 500);
     }
   }
 
@@ -121,11 +156,11 @@ class ApiService {
       );
       request.files.add(multipartFile);
 
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(_timeoutDuration);
       final response = await http.Response.fromStream(streamedResponse);
       return _parseResponse(response);
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString(), statusCode: 500);
+      return ApiResponse(success: false, message: _formatException(e), statusCode: 500);
     }
   }
 

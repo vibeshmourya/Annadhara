@@ -33,7 +33,10 @@ app.use(
 
 // CORS configuration supporting deployed Vercel domains, custom origins, and mobile clients
 const getAllowedOrigins = () => {
-  const origins = [];
+  const origins = [
+    'https://annadhara-6kjb.vercel.app',
+    'https://annadhara-i83w.vercel.app',
+  ];
   if (process.env.CLIENT_URL) {
     process.env.CLIENT_URL.split(',')
       .map((url) => url.trim())
@@ -52,7 +55,7 @@ const corsOptions = {
 
     const allowed = getAllowedOrigins();
 
-    // 2. Exact match against CLIENT_URL environment variable
+    // 2. Exact match against CLIENT_URL environment variable or default production domains
     if (allowed.includes(origin)) {
       return callback(null, true);
     }
@@ -86,6 +89,8 @@ const corsOptions = {
     'Accept',
     'Origin',
     'Range',
+    'X-Test-Role',
+    'x-test-role',
   ],
   exposedHeaders: ['Content-Range', 'X-Total-Count'],
   optionsSuccessStatus: 204,
@@ -95,10 +100,16 @@ const corsOptions = {
 // Immediate preflight short-circuit: always reply 204 to OPTIONS with CORS headers
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    const origin = req.headers.origin || '*';
+    res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Range');
+    const reqHeaders = req.headers['access-control-request-headers'];
+    res.header(
+      'Access-Control-Allow-Headers',
+      reqHeaders || 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Range, X-Test-Role, x-test-role'
+    );
     res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
     return res.status(204).end();
   }
   next();

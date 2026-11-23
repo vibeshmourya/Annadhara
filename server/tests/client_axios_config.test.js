@@ -26,6 +26,8 @@ async function runAxiosConfigTests() {
   let passed = 0;
   let total = 0;
 
+  const PRODUCTION_API_BASE_URL = 'https://annadhara-i83w.vercel.app/api';
+
   // Simulate resolveBaseUrl logic
   function testResolver({ envUrl, runtimeUrl, isLocal, isDev, isProd }) {
     const rawUrl = (envUrl || runtimeUrl || '').trim();
@@ -44,7 +46,7 @@ async function runAxiosConfigTests() {
     if (isLocal || isDev) {
       return '/api';
     }
-    return '';
+    return PRODUCTION_API_BASE_URL;
   }
 
   // Simulate Request Interceptor URL Normalization
@@ -100,12 +102,13 @@ async function runAxiosConfigTests() {
     console.error(`  ❌ FAILED: Test 3: ${err.message}`);
   }
 
-  // Test 4: Production on remote host does NOT fall back to relative /api when unset
+  // Test 4: Production on remote host safely defaults to PRODUCTION_API_BASE_URL (never relative /api)
   total++;
   try {
     const res = testResolver({ envUrl: '', isLocal: false, isDev: false, isProd: true });
-    assert(res === '', `Expected empty string in production when unset, got: '${res}'`);
-    console.log('  ✅ PASSED: Test 4 - Production on remote host refuses relative /api fallback (prevents 405)');
+    assert(res === 'https://annadhara-i83w.vercel.app/api', `Expected production backend URL, got: '${res}'`);
+    assert(res !== '/api', `Must not fall back to relative /api`);
+    console.log('  ✅ PASSED: Test 4 - Production on remote host safely defaults to deployed backend URL (never relative /api)');
     passed++;
   } catch (err) {
     console.error(`  ❌ FAILED: Test 4: ${err.message}`);

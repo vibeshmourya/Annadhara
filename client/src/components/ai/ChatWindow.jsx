@@ -552,10 +552,15 @@ export const ChatWindow = ({ onClose }) => {
           `🌿 Annadhara AI free-tier limit reached. Please wait ${retrySec} seconds before sending another message.`
         );
       } else {
-        const errorMsg =
-          err.response?.data?.message ||
-          err.message ||
-          'Unable to connect to Annadhara AI service. Please try again.';
+        const isNetworkErr =
+          err.message === 'Network Error' ||
+          err.code === 'ERR_NETWORK' ||
+          !err.response;
+        const errorMsg = isNetworkErr
+          ? 'Unable to connect to Annadhara AI service. Please check your internet connection and verify backend status.'
+          : err.response?.data?.message ||
+            err.message ||
+            'Unable to connect to Annadhara AI service. Please try again.';
         setError(errorMsg);
       }
     } finally {
@@ -1046,6 +1051,19 @@ export const ChatWindow = ({ onClose }) => {
                     ⏳ Free-tier cooldown active: You can send your next message in{' '}
                     <strong>{cooldown}s</strong>.
                   </p>
+                )}
+                {cooldown === 0 && messages.some((m) => m.role === 'user') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+                      if (lastUser) handleSend(lastUser.content);
+                    }}
+                    className="mt-1.5 inline-flex items-center space-x-1 text-[11px] font-bold text-red-700 hover:text-red-900 bg-red-100 hover:bg-red-200 px-2 py-0.5 rounded transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Retry Request</span>
+                  </button>
                 )}
               </div>
             </div>
